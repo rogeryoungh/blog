@@ -1,0 +1,48 @@
+baseURL: "https://rogeryoungh.github.io/blog"
+languageCode: "zh"
+title: "Roger Young 的博客"
+theme: "paper-mod"
+
+
+menu:
+  main:
+    - name: Posts
+      url: post
+      weight: 1
+    - name: Archive
+      url: archives
+      weight: 5
+    - name: Search
+      url: search/
+      weight: 10
+#    - name: Tags
+#      url: tags/
+#      weight: 10
+#    - name: Categories
+#      url: categories/
+#      weight: 10
+    - name: About
+      url: about/
+      weight: 0
+        
+
+markup:
+  highlight:
+    noClasses: false
+  goldmark:
+    renderer:
+      unsafe: true
+
+Copyright: © 2021 [Roger Young](/blog)
+
+params:
+  ShowCodeCopyButtons: true
+  profileMode:
+    enabled: true
+    title: "Roger Young" # optional default will be site title
+    subtitle: "Welcome to my blog!"
+    imageUrl: "avatar.png" # optional
+
+
+outputs:
+  home: ["HTML", "RSS", "JSON"]
