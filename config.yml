@@ -1,4 +1,4 @@
-baseURL: "https://rogeryoungh.github.io/"
+baseURL: "https://rogeryoungh.github.io/blog"
 languageCode: "zh"
 title: "Roger Young"
 theme: "paper-mod"
@@ -33,7 +33,7 @@ markup:
     renderer:
       unsafe: true
 
-Copyright: © 2021 [Roger Young](/)
+Copyright: © 2021 [Roger Young](/blog)
 
 params:
   ShowCodeCopyButtons: true
@@ -45,7 +45,7 @@ params:
     enabled: true
     title: "Roger Young" # optional default will be site title
     subtitle: "Welcome to my blog!"
-    imageUrl: "/avatar.png" # optional
+    imageUrl: "/blog/avatar.png" # optional
   comments: true
   valine:
     enable: true
@@ -57,6 +57,8 @@ params:
   socialIcons:
     - name: github
       url: "https://github.com/rogeryoungh"
+    - name: telegram
+      url: "https://t.me/rogeryoungh"
     - name: rss
       url: "index.xml"
 
