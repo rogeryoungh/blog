@@ -2,9 +2,11 @@
 author: "rogeryoungh"
 title: "Hexo 搭建记录"
 date: "2021-02-02"
-description: "折腾了一整天，终于把 Hexo 给搭到 GitHub Page 上，我还是太菜了。"
+description: "已转 Hugo。"
 katex: true
 ---
+
+**已转 Hugo。**
 
 折腾了一整天，终于把 Hexo 给搭到 GitHub Page 上，我还是太菜了。
 

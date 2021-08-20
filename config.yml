@@ -1,6 +1,6 @@
-baseURL: "https://rogeryoungh.github.io/blog"
+baseURL: "https://rogeryoungh.github.io/"
 languageCode: "zh"
-title: "Roger Young 的博客"
+title: "Roger Young"
 theme: "paper-mod"
 
 
@@ -33,15 +33,32 @@ markup:
     renderer:
       unsafe: true
 
-Copyright: © 2021 [Roger Young](/blog)
+Copyright: © 2021 [Roger Young](/)
 
 params:
   ShowCodeCopyButtons: true
+  ShowToc: true
+  ShowPostNavLinks: true
+  ShowCopyRight: true
+  gitRepo: https://github.com/rogeryoungh/blog
   profileMode:
     enabled: true
     title: "Roger Young" # optional default will be site title
     subtitle: "Welcome to my blog!"
-    imageUrl: "avatar.png" # optional
+    imageUrl: "/avatar.png" # optional
+  comments: true
+  valine:
+    enable: true
+    appId: FIvl3vmw2mH3naQEJhErblHr-gzGzoHsz
+    appKey: BhvzpBrJqPPzfK5phjDBiBb4
+    avatar: 'mp'
+    placeholder: '说点什么吧...'
+    visitor: false
+  socialIcons:
+    - name: github
+      url: "https://github.com/rogeryoungh"
+    - name: rss
+      url: "index.xml"
 
 
 outputs:
