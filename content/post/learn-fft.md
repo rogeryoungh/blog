@@ -3,7 +3,7 @@ author: "rogeryoungh"
 title: "FFT & NTT 学习笔记"
 date: "2021-07-22"
 description: "FFT 怎么这么难啊。"
-mathjax: true
+katex: true
 tags: [多项式]
 ---
 
@@ -342,6 +342,137 @@ void NTT(ll *f, int n, int type) {
 }
 ```
 
+## 拆系数 FFT
+
+如果需要更高的精度，可以考虑拆系数 FFT。
+
+给定多项式 $A(x), B(x)$，再给出 $m = 2^{15}$ 拆分
+
+{{< display-math >}}
+\begin{aligned}
+A(x) & = m A_1(x) + A_0(x)\\
+B(x) & = m B_1(x) + B_0(x)
+\end{aligned}
+{{< /display-math >}}
+
+最终的乘法是
+
+{{< display-math >}}
+A B = m^2 A_1 B_1 + m (A_1 B_0 + A_0 B_1) + A_0 B_0
+{{< /display-math >}}
+
+可以看到，我们要做 4 次 DFT 和 3 次 IDFT 。
+
+### 实现一
+
+构造
+
+{{< display-math >}}
+P = A + i B, Q = A - i B
+{{< /display-math >}}
+
+乘法有
+
+{{< display-math >}}
+\operatorname{DFT} (P) = \operatorname{DFT} (A) + i \operatorname{DFT} (B)
+{{< /display-math >}}
+
+由于 $A, B$
+都是实多项式，注意到共轭复数的性质：$\operatorname{conj} (z_1) \operatorname{cosj} (z_2) = \operatorname{conj} (z_1 z_2)$，代入有
+
+{{< display-math >}}
+\operatorname{conj} (\operatorname{DFT} (P) [j]) = \operatorname{conj} (P (\omega^j)) = \operatorname{conj} (P) \operatorname{conj} (\omega^j) = Q (\omega^{n - j}) = \operatorname{DFT} (Q) [n - j]
+{{< /display-math >}}
+
+因此 2 次 DFT 可以被优化到 1 次。
+
+```cpp
+void FFTFFT(Comp *a, Comp *b, int len, int t) {
+    for (int i = 0; i < lim; i++)
+        a[i] = a[i] + I * b[i];
+    FFT(a, len, t);
+    for (int i = 0; i < lim; i++)
+        b[i] = a[i ? lim - i : 0].conj();
+    for (int i = 0; i < lim; i++) {
+        Comp p = a[i], q = b[i];
+        a[i] = (p + q) * 0.5;
+        b[i] = (q - p) * 0.5 * I;
+    }
+}
+```
+
+故 2 次 DFT 和 2 次 IDFT。
+
+```cpp
+int main() {
+    //...
+    FFT_init(lim);
+    FFTFFT(a0, a1, lim, 1);
+    FFTFFT(b0, b1, lim, 1);
+    for (int i = 0; i < lim; i++) {
+        p[i] = a0[i] * b0[i] + I * a1[i] * b0[i];
+        q[i] = a0[i] * b1[i] + I * a1[i] * b1[i];
+    }
+    FFT(p, lim, -1);
+    FFT(q, lim, -1);
+    for (int i = 0; i <= n + m; i++) {
+        ll a1b1 = ld2ll(p[i].x) % mod;
+        ll a1b0 = ld2ll(p[i].y) % mod;
+        ll a0b1 = ld2ll(q[i].x) % mod;
+        ll a0b0 = ld2ll(q[i].y) % mod;
+        ll ans = ((tLIM * a1b1 + (a1b0 + a0b1)) * tLIM + a0b0) % mod;
+        printf("%lld ", (ans + mod) % mod);
+    }
+    //...
+}
+```
+
+### 实现二
+
+还有另一种拆法。设
+
+{{< display-math >}}
+P_1 = A_1 + i A_0, P_2 = A_1 - i A_0, Q = B_1 + i B_0
+{{< /display-math >}}
+
+乘法有
+
+{{< display-math >}}
+\begin{aligned}
+T_1 = P_1 Q & = A_1 B_1 - A_0 B_0 + i (A_1 B_0 + A_0 B_1)\\
+T_2 = P_2 Q & = A_1 B_1 + A_0 B_0 + i (A_1 B_0 - A_0 B_1)
+\end{aligned}
+{{< /display-math >}}
+
+可以很容易的从中分离出我们需要的系数。故 3 次 DFT，2 次 IDFT。
+
+此方法实现简单，理解容易，而且常数较小，不输 4 次 DFT。（也可能是我姿势不对）
+
+```cpp
+int main() {
+    //...
+    FFT_init(lim);
+    FFT(P1, lim, 1);
+    FFT(P2, lim, 1);
+    FFT(Q, lim, 1);
+    for (int i = 0; i < lim; i++)
+        P1[i] = P1[i] * Q[i];
+    for (int i = 0; i < lim; i++)
+        P2[i] = P2[i] * Q[i];
+    FFT(P1, lim, -1);
+    FFT(P2, lim, -1);
+    for (int i = 0; i <= m + n; i++) {
+        ll a1b1 = ld2ll((P1[i].x + P2[i].x) / 2) % p;
+        ll a1b2 = ld2ll((P1[i].y + P2[i].y) / 2) % p;
+        ll a2b1 = ld2ll((P1[i].y - P2[i].y) / 2) % p;
+        ll a2b2 = ld2ll((P2[i].x - P1[i].x) / 2) % p;
+        ll ans = ((a1b1 * tLIM + (a1b2 + a2b1)) * tLIM + a2b2) % p;
+        printf("%lld ", (ans + p) % p);
+    }
+    //...
+}
+```
+
 ## 应用
 
 ### FFT P3803 多项式乘法
@@ -532,3 +663,246 @@ int main() {
 }
 ```
 {{< /fold >}}
+
+### FFT P4245 任意模数多项式乘法
+
+实现一。
+
+{{< fold summary="拆系数 FFT 模板（实现一，P4245 任意模数多项式乘法）" >}}
+```cpp
+const ll MAXN = 4e5 + 10;
+const ll tLIM = 1 << 15;
+const long double PI = acos(-1);
+
+struct Comp {
+    ld x, y;
+    Comp(ld xx = 0, ld yy = 0) {
+        x = xx, y = yy;
+    }
+    Comp operator+(Comp c) {
+        return Comp(x + c.x, y + c.y);
+    }
+    Comp operator-(Comp c) {
+        return Comp(x - c.x, y - c.y);
+    }
+    Comp operator*(Comp c) {
+        ld tx = x * c.x - y * c.y;
+        ld ty = x * c.y + y * c.x;
+        return Comp(tx, ty);
+    }
+    Comp conj(int type = -1) {
+        return Comp(x, type * y);
+    }
+};
+
+Comp I(0, 1);
+int rev[MAXN];
+Comp Wn[MAXN];
+
+void FFT(Comp *f, int n, int type) {
+    for (int i = 0; i < n; ++i) {
+        if (i < rev[i]) {
+            swap(f[i], f[rev[i]]);
+        }
+    }
+    for (int h = 2; h <= n; h <<= 1) {
+        Comp step = Wn[h].conj(type);
+        for (int j = 0; j < n; j += h) {
+            Comp cur(1, 0);
+            for (int k = j; k < j + h / 2; k++) {
+                Comp f1 = f[k], f2 = f[k + h / 2];
+                f[k] = f1 + cur * f2;
+                f[k + h / 2] = f1 - cur * f2;
+                cur = cur * step;
+            }
+        }
+    }
+    if (type == 1)
+        return;
+    for (int i = 0; i < n; i++)
+        f[i].x /= n, f[i].y /= n;
+}
+
+int mod;
+
+inline void FFTFFT(Comp *a, Comp *b, int len, int t) {
+    for (int i = 0; i < len; i++)
+        a[i] = a[i] + I * b[i];
+    FFT(a, len, t);
+    for (int i = 0; i < len; i++)
+        b[i] = a[i ? len - i : 0].conj();
+    for (int i = 0; i < len; i++) {
+        Comp p = a[i], q = b[i];
+        a[i] = (p + q) * 0.5;
+        b[i] = (q - p) * 0.5 * I;
+    }
+}
+
+Comp a0[MAXN], a1[MAXN], b0[MAXN], b1[MAXN];
+Comp p[MAXN], q[MAXN];
+
+void FFT_init(ll lim) {
+    ll lim_2 = lim >> 1;
+    for (int i = 0; i < lim; ++i)
+        rev[i] = (rev[i >> 1] >> 1) | ((i & 1) * lim_2);
+    for (int i = 1; i <= lim; ++i)
+        Wn[i] = Comp(cos(2 * PI / i), sin(2 * PI / i));
+}
+ll ld2ll(ld n) {
+    return ll(n + 0.5);
+}
+int main() {
+    int n = rr(), m = rr();
+    mod = rr();
+
+    for (int i = 0; i <= n; i++) {
+        int x = rr() % mod;
+        a0[i].x = x / tLIM;
+        a1[i].x = x % tLIM;
+    }
+    for (int i = 0; i <= m; i++) {
+        int x = rr() % mod;
+        b0[i].x = x / tLIM;
+        b1[i].x = x % tLIM;
+    }
+
+    int lim = 1;
+    while (lim < n + m + 1)
+        lim <<= 1;
+
+    FFT_init(lim);
+
+    FFTFFT(a0, a1, lim, 1);
+    FFTFFT(b0, b1, lim, 1);
+
+    for (int i = 0; i < lim; i++) {
+        p[i] = a0[i] * b0[i] + I * a1[i] * b0[i];
+        q[i] = a0[i] * b1[i] + I * a1[i] * b1[i];
+    }
+
+    FFT(p, lim, -1);
+    FFT(q, lim, -1);
+
+    for (int i = 0; i <= n + m; i++) {
+        ll a1b1 = ld2ll(p[i].x) % mod;
+        ll a1b0 = ld2ll(p[i].y) % mod;
+        ll a0b1 = ld2ll(q[i].x) % mod;
+        ll a0b0 = ld2ll(q[i].y) % mod;
+        ll ans = ((tLIM * a1b1 + (a1b0 + a0b1)) * tLIM + a0b0) % mod;
+        printf("%lld ", (ans + mod) % mod);
+    }
+    return 0;
+}
+```
+{{< /fold >}}
+
+
+实现二。
+
+{{< fold summary="拆系数 FFT 模板（实现二，P4245 任意模数多项式乘法）" >}}
+```cpp
+const ll MAXN = 4e5 + 10;
+const ll tLIM = 1 << 15;
+const long double PI = acos(-1);
+
+int n, m, p, rev[MAXN];
+
+struct Comp {
+    ld x, y;
+    Comp(ld xx = 0, ld yy = 0) {
+        x = xx, y = yy;
+    }
+    Comp operator+(Comp c) {
+        return Comp(x + c.x, y + c.y);
+    }
+    Comp operator-(Comp c) {
+        return Comp(x - c.x, y - c.y);
+    }
+    Comp operator*(Comp c) {
+        ld tx = x * c.x - y * c.y;
+        ld ty = x * c.y + y * c.x;
+        return Comp(tx, ty);
+    }
+    Comp conj(int type = -1) {
+        return Comp(x, type * y);
+    }
+};
+Comp P1[MAXN], P2[MAXN], Q[MAXN], Wn[MAXN];
+void FFT(Comp *f, int n, int type) {
+    for (int i = 0; i < n; ++i) {
+        if (i < rev[i]) {
+            swap(f[i], f[rev[i]]);
+        }
+    }
+    for (int h = 2; h <= n; h <<= 1) {
+        Comp step = Wn[h].conj(type);
+        for (int j = 0; j < n; j += h) {
+            Comp cur(1, 0);
+            for (int k = j; k < j + h / 2; k++) {
+                Comp f1 = f[k], f2 = f[k + h / 2];
+                f[k] = f1 + cur * f2;
+                f[k + h / 2] = f1 - cur * f2;
+                cur = cur * step;
+            }
+        }
+    }
+    if (type == 1)
+        return;
+    for (int i = 0; i < n; i++)
+        f[i].x /= n, f[i].y /= n;
+}
+
+ll ld2ll(ld n) {
+    return ll(n + 0.5);
+}
+
+void FFT_init(ll lim) {
+    ll lim_2 = lim >> 1;
+    for (int i = 0; i < lim; ++i)
+        rev[i] = (rev[i >> 1] >> 1) | ((i & 1) * lim_2);
+    for (int i = 1; i <= lim; ++i)
+        Wn[i] = Comp(cos(2 * PI / i), sin(2 * PI / i));
+}
+
+int main() {
+    scanf("%d%d%d", &n, &m, &p);
+    for (int i = 0; i <= n; i++) {
+        ll t = rr();
+        P1[i] = Comp(t / tLIM, t % tLIM);
+        P2[i] = Comp(t / tLIM, -t % tLIM);
+    }
+    for (int i = 0; i <= m; i++) {
+        ll t = rr();
+        Q[i] = Comp(t / tLIM, t % tLIM);
+    }
+    int lim = 1, lim_2;
+    while (lim <= n + m)
+        lim <<= 1;
+    FFT_init(lim);
+    FFT(P1, lim, 1);
+    FFT(P2, lim, 1);
+    FFT(Q, lim, 1);
+    for (int i = 0; i < lim; i++)
+        P1[i] = P1[i] * Q[i];
+    for (int i = 0; i < lim; i++)
+        P2[i] = P2[i] * Q[i];
+    FFT(P1, lim, -1);
+    FFT(P2, lim, -1);
+    for (int i = 0; i <= m + n; i++) {
+        ll a1b1 = ld2ll((P1[i].x + P2[i].x) / 2) % p;
+        ll a1b2 = ld2ll((P1[i].y + P2[i].y) / 2) % p;
+        ll a2b1 = ld2ll((P1[i].y - P2[i].y) / 2) % p;
+        ll a2b2 = ld2ll((P2[i].x - P1[i].x) / 2) % p;
+        ll ans = ((a1b1 * tLIM + (a1b2 + a2b1)) * tLIM + a2b2) % p;
+        printf("%lld ", (ans + p) % p);
+    }
+    return 0;
+}
+```
+{{< /fold >}}
+
+### 其他应用
+
+FFT 实际上是一个工具，用于快速计算卷积，这篇文章我想更聚焦于理解 FFT 的计算过程。
+
+FFT 还有很多应用，比如快速加法，带通配文本匹配等，后面等再刷些题了可能会开一篇讲一讲这个，现在我积累的还不够。
