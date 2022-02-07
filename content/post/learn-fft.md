@@ -7,30 +7,32 @@ katex: true
 tags: [多项式]
 ---
 
-前置知识：复数，需要理解 Euler 公式。
-
 以下是我对 FFT 的感性理解，可能并不严谨，如有错误欢迎指正。
 
 ## FFT
+
+以下讲述的算法是 Cooley–Tukey FFT，它在算法竞赛中使用的更为广泛。
+
+前置知识：复数，需要理解 Euler 公式。
 
 ### 多项式乘法
 
 对于 $n$ 次多项式
 
-{{< display-math >}}
+$$
 \begin{aligned}
 f(x) = \sum_{i=0}^n f_ix^i &=  f_0 + f_1 x + f_2x^2 + \cdots + g_nx^n \\
 g(x) = \sum_{i=0}^n g_ix^i &=  g_0 + g_1 x + g_2x^2 + \cdots + g_nx^n
 \end{aligned}
-{{< /display-math >}}
+$$
 
-它们的乘法是 $F(x) = f(x)g(x) = \sum\limits_{k=0}^{2n} c_kx^k$，其中
+它们的卷积是 $F(x) = f(x) \ast g(x) = (f \ast g)(x) = \sum\limits_{k=0}^{2n} c_kx^k$，其中
 
-{{< display-math >}}
+$$
 c_k = \sum_{i+j=k}f_ig_j
-{{< /display-math >}}
+$$
 
-因此计算多项式的乘积需要 $n^2$ 次系数乘法，我们需要优化。
+因此朴素的计算多项式的卷积需要 $n^2$ 次系数乘法，我们需要优化。
 
 ### 点值表示法
 
@@ -38,117 +40,121 @@ $n$ 次多项式 $f(x)$ 可以由 $n+1$ 个系数决定，也可以由 $n+1$ 个
 
 考虑选取 $2n+1$ 个座标来确定 $f(x)$ 和 $g(x)$。则 $F(x)$ 可以简单的通过做 $2n+1$ 次乘法得到
 
-{{< display-math >}}
+$$
 (x_k,F(x_k)) = \left(x_k, f(x_k)g(x_k)\right)
-{{< /display-math >}}
+$$
 
-于是求多项式的乘法，可以先从系数表示法转换为点值表示法，做完乘法再变回去。
+现在我们有了新的思路：先从系数表示法转换为点值表示法，做完乘法后再变回去。
 
 ### DFT
 
-怎么把多项式转换成点值呢？我们有离散 Fourier 变换。称方程 $x^n = 1$ 的 $n$ 个解为单位根。
+怎么把多项式转换成点值呢？我们有离散 Fourier 变换。
 
-设多项式 $f(x) = \sum\limits_{k=0}^{n-1} f_kx^k$，并选择一个单位根 $\omega$，则称向量
+称方程 $x^n = 1$ 的 $n$ 个解为单位根 $\zeta_n$。对于给定的多项式 $f(x) = \sum\limits_{k=0}^{n-1} f_kx^k$ 和一个单位根 $\zeta_n$，称向量
 
-{{< display-math >}}
-\operatorname{DFT}_{\omega}(f) =( f(1), f(\omega^1), \cdots, f(\omega^{n-1}) )
-{{< /display-math >}}
+$$
+\operatorname{DFT}_{\zeta_n}(f) =( f(1), f(\zeta_n^1), \cdots, f(\zeta_n^{n-1}) )
+$$
 
 为 $f$ 的离散 Fourier 变换（Discrete Fourier Transform）。
 
 DFT 存在逆变换（IDFT），即从点值重新变回系数，仍是从向量到向量的变换。
 
-IDFT 存在性质
+IDFT 具有一个关键性质
 
-{{< display-math >}}
-(\operatorname{DFT}_{\omega})^{-1} = \frac{1}{n} (\operatorname{DFT}_{{\omega}^{-1}})
-{{< /display-math >}}
+$$
+(\operatorname{DFT}_{\zeta})^{-1} = \frac{1}{n} (\operatorname{DFT}_{{\zeta}^{-1}}) \tag{1}
+$$
 
-篇幅所限，不放证明（~~我不会证~~）。现在我们可以统一的处理 DFT 和 IDFT。
+我们将在后文证明它。现在我们可以统一的处理 DFT 和 IDFT。
+
+为了方便描述，接下来我们将把 $\operatorname{DFT}_{\zeta_n}$ 简单的记作 $\mathcal{F}_n$。
 
 ### 单位原根
 
-至此，我们计算 DFT 的复杂度仍然是 $O(n^2)$，其与 FFT 的关键差别就是选取特殊的点加速计算。
+至此，我们计算 DFT 的复杂度仍然是 $O(n^2)$，FFT 所迈出的关键一步是选取特殊的点加速计算。
 
-单位根中特殊的一个记作 $\omega_n = e^{\frac{2 \pi i}{n}}$，它叫做单位原根。根据 Euler 公式，有
+单位根中特殊的一个记作 $\zeta_n = e^{\frac{2 \pi i}{n}}$，它叫做单位原根。依 Euler 公式，有
 
-{{< display-math >}}
-\omega_n = e^{\tfrac{2 \pi i}{n}} = \cos \left(\frac{2\pi}{n}\right) + i \sin \left(\frac{2\pi}{n}\right)
-{{< /display-math >}}
+$$
+\zeta_n = e^{\tfrac{2 \pi i}{n}} = \cos \left(\frac{2\pi}{n}\right) + i \sin \left(\frac{2\pi}{n}\right)
+$$
 
-即 $\omega_n$ 是单位圆上的一个点，全部的 $n$ 个单位根
+即 $\zeta_n$ 是单位圆上的一个点，全部的 $n$ 个单位根
 
-{{< display-math >}}
-x_k = \omega_n^k = e^{k\tfrac{2 \pi i}{n}} = \cos \left(\frac{2\pi k}{n}\right) + i \sin \left(\frac{2\pi k}{n}\right) 
-{{< /display-math >}}
+$$
+x_k = \zeta_n^k = e^{k\tfrac{2 \pi i}{n}} = \cos \left(\frac{2\pi k}{n}\right) + i \sin \left(\frac{2\pi k}{n}\right) 
+$$
 
-恰全是单位元的 $n$ 等分点。因此根据 Euler 公式，**单位根之间的乘法就是在单位元上转圈圈。**
+恰对应到单位圆的 $n$ 等分点。因此根据 Euler 公式，**单位根之间的乘法就是在单位圆上转圈圈。**
 
-不难通过 Euler 公式验证单位原根 $\omega_n$ 的几条性质：
+不难通过 Euler 公式验证单位原根 $\zeta_n$ 的几条性质：
 
-- $\omega_{2n}^{2k} = \omega_n^k$。
-- $\omega_{2n}^{n+k} = -\omega_{2n}^k$。
+- $\zeta_{2n}^{2k} = \zeta_n^k$。
+- $\zeta_{2n}^{n+k} = -\zeta_{2n}^k$。
 
 ### 分治
 
 利用单位原根的特殊性，我们可以分治计算 DFT。比如对于 $7$ 次多项式
 
-{{< display-math >}}
+$$
 \begin{aligned}
 f(x) &= f_0 + f_1x + f_2x^2 + f_3 x^3 + f_4 x^4 + f_5 x^5 + f_6 x^6 + f_7 x^7 \\
 &= (f_0 + f_2x^2 + f_4x^4 + f_6x^6) + x(f_1 + f_3x^2 + f_5x^4 + f_7x^6)
 \end{aligned}
-{{< /display-math >}}
+$$
 
-奇偶分别建立函数
+奇偶分类
 
-{{< display-math >}}
+$$
 \begin{aligned}
 f^{[0]}(x) &= f_0 + f_2x + f_4x^2 + f_6x^3 \\
 f^{[1]}(x) &= f_1 + f_3x + f_5x^2 + f_7x^3
 \end{aligned}
-{{< /display-math >}}
+$$
 
 则原来的函数可以表示为
 
-{{< display-math >}}
+$$
 f(x) = f^{[0]}(x^2) + xf^{[1]}(x^2)
-{{< /display-math >}}
+$$
 
-一般的，对于度小于 $n$ 的多项式 $f(x)$，利用单位原根的性质有
+一般的，对于度小于 $n$ 的多项式 $f(x)$，在单位根 $x = \zeta_n^k$ 处的点值是
 
-{{< display-math >}}
+$$
 \begin{aligned}
-f(\omega_{n}^k) &= f^{[0]}(\omega_{n}^k \cdot \omega_{n}^k) + \omega_{n}^kf^{[1]}(\omega_{n}^k \cdot \omega_{n}^k) \\
-&= f^{[0]}(\omega_{n}^{2k}) + \omega_{n}^kf^{[1]}(\omega_{n}^{2k}) \\
-&= f^{[0]}(\omega_{n/2}^{k}) + \omega_{n}^kf^{[1]}(\omega_{n/2}^{k})
+f(\zeta_n^k) &= f^{[0]}(\zeta_n^k \cdot \zeta_n^k) + \zeta_n^kf^{[1]}(\zeta_n^k \cdot \zeta_n^k) \\
+&= f^{[0]}(\zeta_n^{2k}) + \zeta_n^kf^{[1]}(\zeta_n^{2k}) \\
+&= f^{[0]}(\zeta_{n/2}^{k}) + \zeta_n^kf^{[1]}(\zeta_{n/2}^{k})
 \end{aligned}
-{{< /display-math >}}
+$$
 
 同理可得
 
-{{< display-math >}}
+$$
 \begin{aligned}
-f(\omega_{n}^{k+n/2}) &= f^{[0]}(\omega_{n}^{2k+n}) + \omega_{n}^{k+n/2}f^{[1]}(\omega_{n}^{2k+n}) \\
-&= f^{[0]}(\omega_{n/2}^{k}) - \omega_{n}^{k}f^{[1]}(\omega_{n/2}^{k})
+f(\zeta_n^{k+n/2}) &= f^{[0]}(\zeta_n^{2k+n}) + \zeta_n^{k+n/2}f^{[1]}(\zeta_n^{2k+n}) \\
+&= f^{[0]}(\zeta_{n/2}^{k}) - \zeta_n^{k}f^{[1]}(\zeta_{n/2}^{k})
 \end{aligned}
-{{< /display-math >}}
-
-因此我们需要把多项式的系数向上补到 $2^n$ 个，方便分治。
+$$
 
 在 DFT 中使用有
 
-{{< display-math >}}
+$$
 \begin{aligned}
-\operatorname{DFT}_{\omega}(f)[j] &= \operatorname{DFT}_{\omega^2}(f^{[0]})[j] + \omega^j \operatorname{DFT}_{\omega^2}(f^{[1]})[j] \\
-\operatorname{DFT}_{\omega}(f)[j + n/2] &= \operatorname{DFT}_{\omega^2}(f^{[0]})[j] - \omega^j\operatorname{DFT}_{\omega^2}(f^{[1]})[j]
+\mathcal{F}_n(f)[j] &= \mathcal{F}_{n/2}(f^{[0]})[j] + \zeta_n^j \mathcal{F}_{n/2}(f^{[1]})[j] \\
+\mathcal{F}_n(f)[j + n/2] &= \mathcal{F}_{n/2}(f^{[0]})[j] - \zeta_n^j\mathcal{F}_{n/2}(f^{[1]})[j]
 \end{aligned}
-{{< /display-math >}}
+\tag{2}
+$$
+
+因此我们需要把多项式的系数个数向上补到 $2^n$，方便分治。
 
 至此，我们可以写出递归版的 FFT。
 
 ```cpp
-void FFT(Comp *f, int n, int type) {
+void fft(int n, img *f, int op) {
+    static img tmp[1 << 18];
     if (n == 1)
         return;
     for (int i = 0; i < n; i++)
@@ -159,13 +165,13 @@ void FFT(Comp *f, int n, int type) {
         else
             f[i / 2] = tmp[i];
     }
-    Comp *g = f, *h = f + n / 2;
-    DFT(g, n / 2, type), DFT(h, n / 2, type);
-    Comp step(cos(2 * PI / n), sin(2 * PI * type / n)), cur(1, 0);
+    img *g = f, *h = f + n / 2;
+    fft(n / 2, g, op), fft(n / 2, h, op);
+    img w0 = {cos(2 * PI / n), sin(2 * PI * op / n)}, w = {1, 0};
     for (int k = 0; k < n / 2; k++) {
-        tmp[k] = g[k] + cur * h[k];
-        tmp[k + n / 2] = g[k] - cur * h[k];
-        cur = cur * step;
+        tmp[k] = g[k] + w * h[k];
+        tmp[k + n / 2] = g[k] - w * h[k];
+        w = w * w0;
     }
     for (int i = 0; i < n; i++)
         f[i] = tmp[i];
@@ -174,14 +180,16 @@ void FFT(Comp *f, int n, int type) {
 
 ### 蝴蝶变换
 
-递归分治总是不尽人意的，如果能一次到位就更好了。还是以 $7$ 次多项式为例
+递归分治总是不尽人意的，我们在前几行只是做了递归分组的事情，可以考虑一步到位。
+
+还是以 $7$ 次多项式为例
 
 - 初始 $\{x^0,x^1,x^2,x^3,x^4,x^5,x^6,x^7\}$
 - 一次 $\{x^0,x^2,x^4,x^6\},\{x^1,x^3,x^5,x^7\}$
 - 两次 $\{x^0,x^4\},\{x^2,x^6\},\{x^1,x^5\},\{x^3,x^7\}$
 - 结束 $\{x^0\},\{x^4\},\{x^2\},\{x^6\},\{x^1\},\{x^5\},\{x^3\},\{x^7\}$
 
-写出二进制的形式，可以发现规律
+写出二进制的形式，可以发现：结束和开始的二进制恰好是相反的。
 
 | 初始    | 0    | 1    | 2    | 3    | 4    | 5    | 6    | 7    |
 | :-----: | :--: | :--: | :--: | :--: | :--: | :--: | :--: | :--: |
@@ -189,58 +197,45 @@ void FFT(Comp *f, int n, int type) {
 | 结束(2) | 000  | 100  | 010  | 110  | 001  | 101  | 011  | 111  |
 | 结束    | 0    | 4    | 2    | 6    | 1    | 5    | 3    | 7    |
 
-结束和开始的二进制恰好是相反的。这个变换称为蝴蝶变换，也称位逆序置换（bit-reversal permutation）。
+这个变换称为蝴蝶变换，也称位逆序置换（bit-reversal permutation）。
 
-我们可以 $O(n)$ 的预处理出变换数组。设 `R(x)` 是 $x$ 的变换结果，则 `R(x>>1)` 是已求的。
-
-{{< display-math >}}
-\begin{aligned}
-\texttt{000abcd} &\to \texttt{dcba000} \\
-\texttt{00abcdx} &\to \texttt{xdcba00}
-\end{aligned}
-{{< /display-math >}}
-
-即是把 `R(x>>1)` 右移一位再补上最高位即可。代码如下
+我们可以 $O(n)$ 的预处理出变换数组。设 `R(x)` 是 $x$ 的变换结果，则 `R(x >> 1)` 此时是已知的。即是把 `R(x >> 1)` 右移一位再补上最高位即可。代码如下
 
 ```cpp
-int lim = 1, lim_2;
-while (lim <= n + m)
-    lim <<= 1;
-lim_2 = lim >> 1;
-for (int i = 0; i < lim; ++i) {
-    rev[i] = rev[i >> 1] >> 1;
-    if (i & 1)
-        rev[i] |= lim >> 1;
-    // 或者合并写为
-    // rev[i] = (rev[i >> 1] >> 1) | ((i & 1) * lim_2);
+void pre_rev(int lim) {
+    int k = std::__lg(lim);
+    rev.resize(lim);
+    for (int i = 0; i < lim; ++i) {
+        rev[i] = rev[i >> 1] >> 1;
+        if (i & 1)
+            rev[i] |= lim >> 1;
+        // 或者合并写为
+        // rev[i] = (rev[i >> 1] >> 1) | ((i & 1) << (k - 1));
+    }
 }
 ```
 
 现在我们可以写出非递归版的 FFT。
 
 ```cpp
-void FFT(Comp *f, int n, int type) {
-    for (int i = 0; i < n; ++i) {
-        if (i < rev[i]) {
+void fft(img *f, int n, int op) { // DIT
+    for (int i = 0; i < n; ++i)
+        if (i < rev[i])
             swap(f[i], f[rev[i]]);
-        }
-    }
-    for (int h = 2; h <= n; h <<= 1) {
-        Comp step(cos(2 * PI / h), sin(2 * PI * type / h));
-        for (int j = 0; j < n; j += h) {
-            Comp cur(1, 0);
-            for (int k = j; k < j + h / 2; k++) {
-                Comp f1 = f[k], f2 = cur * f[k + h / 2];
-                f[k] = f1 +  f2;
-                f[k + h / 2] = f1 - f2;
-                cur = cur * step;
+    for (int l = 1; l <= n / 2; l <<= 1) {
+        img w0 = {cos(PI / l), sin(PI * op / l)};
+        for (int i = 0; i < n; i += l * 2) {
+            img w = {1, 0};
+            for (int j = 0; j < l; j++) {
+                img x = f[i + j], y = w * f[i + j + l];
+                f[i + j] = x + y, f[i + j + l] = x - y;
+                w = w * w0;
             }
         }
     }
-    if (type == 1)
-        return;
-    for (int i = 0; i < n; i++)
-        f[i].x /= n, f[i].y /= n;
+    if (op == -1)
+        for (int i = 0; i < n; i++)
+            f[i] = f[i] / n;
 }
 ```
 
@@ -252,16 +247,16 @@ void FFT(Comp *f, int n, int type) {
 
 ### 原根
 
-我们本质上用到的单位原根 $\omega_n$ 的两个性质是：
+我们本质上用到的单位原根 $\zeta_n$ 的两个性质是：
 
-- $\omega_{n}^{n} = 1$。
-- $\omega_{2n}^{n} = -1$。
+- $\zeta_{n}^{n} = 1$。
+- $\zeta_{2n}^{n} = -1$。
 
-可以联想到模 $p$ 剩余类域 $\mathbb{Z}_p$：其中的元素是 $\\{0,1,\cdots,p-1\\}$，其上的运算都是模 $p$ 的。由于 Fermat 小定理 
+可以联想到模 $p$ 剩余类域 $\mathbb{Z}_p$：其中的元素是 $\{0,1,\cdots,p-1\}$，其上的运算都是模 $p$ 的。由于 Fermat 小定理 
 
-{{< display-math >}}
+$$
 a^{\varphi(p)} = a^{p-1} \equiv 1
-{{< /display-math >}}
+$$
 
 即从另一个角度说，$p-1$ 个正整数都是同余方程 $x^{p-1} \equiv 1$ 的解。
 
@@ -269,25 +264,25 @@ a^{\varphi(p)} = a^{p-1} \equiv 1
 
 定义正整数 $a \in \mathbb{Z}_p$ 的阶 $\delta_p(a)$ 为最小的 $r$ 使得 $a^r \equiv 1$。由 Fermat 小定理 $a^{\varphi(p)} \equiv 1$，因此 $a$ 的阶一定存在且有 $\delta_p(a) \mid \varphi(p)$。可以证明
 
-{{< display-math >}}
-a,a^2,\cdots a^{\delta_p(a)} \tag{1}
-{{< /display-math >}}
+$$
+a,a^2,\cdots a^{\delta_p(a)} \tag{3}
+$$
 
-在模 $p$ 下余数互不相同。由 Lagrange 定理，$x^{\delta_p(a)} \equiv 1$ 的解至多有 $\delta_p(a)$ 个，恰是 $(1)$ 中所展示的。
+在模 $p$ 下余数互不相同。由 Lagrange 定理，$x^{\delta_p(a)} \equiv 1$ 的解至多有 $\delta_p(a)$ 个，恰是 $(3)$ 中所展示的。
 
 通过整除的性质，可以想到只有 $i \bot \delta_p(a)$ 才有 $\delta_p(a^i) = \delta_p(a)$，即 $a$ 总是附带着 
 
-{{< display-math >}}
+$$
 \sum_{i=1}^{\delta_p(a)} [\gcd(i, \delta_p(a)) = 1] = \varphi(\delta_p(a))
-{{< /display-math >}}
+$$
 
 个阶相同的东西。因此阶为 $\delta_p(a)$ 的数恰有 $\varphi(\delta_p(a))$ 个。
 
 因为每个正整数都有唯一确定的阶，不妨假设对于所有 $d \mid \varphi(p)$，阶 $d$ 都存在 $\varphi(d)$ 个对应的整数，统计整数个数
 
-{{< display-math >}}
+$$
 \sum_{d \mid \varphi(p)} \varphi(d) = \varphi(p) = p - 1
-{{< /display-math >}}
+$$
 
 恰为 $\mathbb{Z}_p$ 全部正整数的个数，因此假设成立，也就存在 $a$ 使得 $\delta_p(a) = p-1$。
 
@@ -297,612 +292,255 @@ a,a^2,\cdots a^{\delta_p(a)} \tag{1}
 
 尽可能提取 $p - 1$ 的因子 $2$ 有
 
-{{< display-math >}}
+$$
 p = N q + 1, N = 2^m
-{{< /display-math >}}
+$$
 
-设 $\mathbb{Z}_p$ 的一个原根 $g$，将 $g_N \equiv g^q$ 看作 $\omega_n$ 的等价。利用二次剩余的知识不难得到 $g_N^N \equiv 1$ 和 $g_N^{N/2} \equiv -1$。 
+设 $\mathbb{Z}_p$ 的一个原根 $g$，将 $g_N \equiv g^q$ 看作 $\zeta_n$ 的等价。利用二次剩余的知识不难得到 $g_N^N \equiv 1$ 和 $g_N^{N/2} \equiv -1$。 
 
 常见的有
 
-{{< display-math >}}
+$$
 \begin{aligned}
 p = 1004535809 = 479 \times 2^{21} + 1&, g = 3 \\
 p = 998244353 = 7 \times 17 \times 2^{23} + 1&, g = 3
 \end{aligned}
-{{< /display-math >}}
+$$
 
 类似的，我们可以写出程序
 
 ```cpp
-void NTT(ll *f, int n, int type) {
-    for (int i = 0; i < n; ++i) {
-        if (i < rev[i]) {
+void ntt(ll *f, int n, int type) {
+    for (int i = 0; i < n; ++i)
+        if (i < rev[i])
             swap(f[i], f[rev[i]]);
-        }
-    }
-    for (int h = 2; h <= n; h <<= 1) {
+    for (int h = 2; h < n; h <<= 1) {
         ll tg = type == 1 ? 3 : g_inv;
-        ll gn = qpow(tg, (mod - 1) / h);
+        ll gn = qpow(tg, (P - 1) / h);
         for (int j = 0; j < n; j += h) {
             ll g = 1;
             for (int k = j; k < j + h / 2; k++) {
-                ll f1 = f[k], f2 = g * f[k + h / 2] % mod;
-                f[k] = mo(f1 + f2);
-                f[k + h / 2] = mo(f1 - f2);
-                g = g * gn % mod;
+                ll f1 = f[k], f2 = g * f[k + h / 2] % P;
+                f[k] = (f1 + f2) % P;
+                f[k + h / 2] = (f1 - f2 + P) % P;
+                g = g * gn % P;
             }
         }
     }
-    if (type == 1)
-        return;
-    ll lim_inv = inv(n);
-    for (int i = 0; i < n; i++)
-        f[i] = f[i] * lim_inv % mod;
+    ll iv_n = qpow(n);
+    if (type == -1)
+        for (int i = 0; i < n; i++)
+            f[i] = f[i] * iv_n % P;
 }
 ```
 
-## 拆系数 FFT
+至此，你已经学会 FFT 了。下面我们将更深入的从数学角度研究 FFT，补足理论基础。
 
-如果需要更高的精度，可以考虑拆系数 FFT。
+## 线性变换
 
-给定多项式 $A(x), B(x)$，再给出 $m = 2^{15}$ 拆分
+DFT 是一个线性变换。换句话说，它可以被写成矩阵乘法的形式
 
-{{< display-math >}}
+$$
+\begin{bmatrix}
+    f(\zeta_n^0) \\ f(\zeta_n^1) \\ f(\zeta_n^2) \\ \vdots \\ f(\zeta_n^{n-1})
+\end{bmatrix} = \begin{bmatrix}
+    1 & 1 & 1 & \cdots & 1 \\
+    1 & \zeta_n^1 & \zeta_n^2 & \cdots & \zeta_n^{n-1} \\
+    1 & \zeta_n^2 & \zeta_n^4 & \cdots & \zeta_n^{2(n-1)} \\
+    \vdots & \vdots & \vdots  & \ddots & \vdots \\
+    1 & \zeta_n^{n-1} & \zeta_n^{2(n-1)} & \cdots & \zeta_n^{(n-1)^2}
+\end{bmatrix}
+\begin{bmatrix}
+    f_0 \\ f_1 \\ f_2 \\ \vdots \\ f_{n-1}
+\end{bmatrix} 
+$$
+
+我们把中间的那个 $n$ 阶的 Vandermonde 方阵记为 $V(\zeta_n) = (\zeta_n^{ij})$。
+
+直接计算 $V(\zeta_n)$ 的逆很不好算，但是验证下式是对角矩阵还是容易的
+
+$$
+V(\zeta_n) V(\zeta_n^{-1}) = (n[i = j]) = n I_n
+$$
+
+即 IDFT 所对应的矩阵为 $V^{-1}(\zeta_n) = \frac{1}{n} V(\zeta_n^{-1})$，我们便证明了 $(1)$ 式。
+
+### 干掉 REV
+
+其实上文所实现的 FFT 和 IFFT 并不对偶，只是卷积定理使得 IFFT 恰是 FFT 的逆运算。具体的说，我们实现了两个 DIT，因此需要在计算之前进行蝴蝶变换。
+
+![Wikipedia](https://upload.wikimedia.org/wikipedia/commons/f/f2/DIF_DIT.jpg)
+
+我们运算的核心内容在于 $(2)$ 式，它可以被写做矩阵形式。
+
+$$
+\begin{bmatrix}
+O_1 \\ O_2
+\end{bmatrix} = 
+\begin{bmatrix}
+1 & \zeta_n^{-j} \\
+1 & -\zeta_n^{-j} 
+\end{bmatrix} 
+\begin{bmatrix}
+I_1 \\ I_2
+\end{bmatrix}
+$$
+
+对矩阵求逆
+
+$$
+\begin{bmatrix}
+I_1 \\ I_2
+\end{bmatrix} = \frac{1}{2} 
+\begin{bmatrix}
+1 & 1 \\
+\zeta_n^{j} & -\zeta_n^{j} 
+\end{bmatrix} 
+\begin{bmatrix}
+O_1 \\ O_2
+\end{bmatrix} \tag{4}
+$$
+
+我们便得到了 DIF。类似的，我们可以实现两个 DIF 作为 FFT，此时蝴蝶变换在计算之后。
+
+```cpp
+void fft(img *f, int n, int op) { // DIF
+    for (int l = n / 2; l >= 1; l >>= 1) {
+        img w0 = {cos(PI / l), sin(PI * op / l)};
+        for (int i = 0; i < n; i += l * 2) {
+            img w = {1, 0};
+            for (int j = 0; j < l; j++) {
+                img x = f[i + j], y = f[i + j + l];
+                f[i + j] = x + y, f[i + j + l] = w * (x - y);
+                w = w * w0;
+            }
+        }
+    }
+    for (int i = 0; i < n; ++i)
+        if (i < rev[i])
+            swap(f[i], f[rev[i]]);
+    if (op == -1)
+        for (int i = 0; i < n; i++)
+            f[i] = f[i] / n;
+}
+```
+
+容易发现，若我们以 DIF 作为 FFT，DIT 作为 IFFT，是不需要蝴蝶变换的。
+
+```cpp
+void fft(img *f, int n) {
+    for (int l = n / 2; l >= 1; l >>= 1) {
+        img w0 = {cos(PI / l), sin(PI / l)};
+        for (int i = 0; i < n; i += l * 2) {
+            img w = {1, 0};
+            for (int j = 0; j < l; j++) {
+                img x = f[i + j], y = f[i + j + l];
+                f[i + j] = x + y, f[i + j + l] = w * (x - y);
+                w = w * w0;
+            }
+        }
+    }
+}
+
+void ifft(img *f, int n) {
+    for (int l = 1; l <= n / 2; l <<= 1) {
+        img w0 = img{cos(PI / l), sin(PI / l)}.conj();
+        for (int i = 0; i < n; i += l * 2) {
+            img w = {1, 0};
+            for (int j = 0; j < l; j++) {
+                img x = f[i + j], y = w * f[i + j + l];
+                f[i + j] = x + y, f[i + j + l] = x - y;
+                w = w * w0;
+            }
+        }
+    }
+    for (int i = 0; i < n; i++)
+        f[i] = f[i] / n;
+}
+```
+
+以上，便是 Twisted FFT。
+
+### 另一种理解
+
+注意到
+
+$$
+f(x_0) = f \bmod (x - x_0)
+$$
+
+我们可以从这方面着手，从取模角度重新审视上述算法。假设 $f$ 可以被分解为
+
+$$
+f = (x^n - r)(x^n + r)f_{0} + (x^n - r)f_{1} + (x^n + r)f_{2} + f_3
+$$
+
+令
+
+$$
 \begin{aligned}
-A(x) & = m A_1(x) + A_0(x)\\
-B(x) & = m B_1(x) + B_0(x)
+O_1 &= f \bmod (x^n + r) = -2r f_1 + f_3\\
+O_2 &= f \bmod (x^n - r) = 2r f_2 + f_3
 \end{aligned}
-{{< /display-math >}}
+$$
 
-最终的乘法是
+故
 
-{{< display-math >}}
-A B = m^2 A_1 B_1 + m (A_1 B_0 + A_0 B_1) + A_0 B_0
-{{< /display-math >}}
+$$
+f \bmod (x^{2n} - r^2) = \frac{O_2-O_1}{2r}x^n + \frac{O_2 + O_1}{2} = I_1 x^n + I_2
+$$
 
-可以看到，我们要做 4 次 DFT 和 3 次 IDFT 。
+注意到代码中我们并没有直接求 $O_1$，而是对第 $j$ 位乘上了 $\zeta_{2n}^j$，即求的是 $f(\zeta_{2n}x)$。
 
-### 实现一
+可以发现
 
-构造
+$$
+f(\zeta_{2n}x) \bmod (x^n-1) = f(\zeta_{2n}x) \bmod ((\zeta_{2n} x)^n - 1) = f(x) \bmod (x^n + 1)
+$$
 
-{{< display-math >}}
-P = A + i B, Q = A - i B
-{{< /display-math >}}
+这个图并不好理解，下面那张 Original FFT 更容易理解，但是现在广为流传的算法是 Twisted FFT。
 
-乘法有
+![](../img/fft-twisted.png)
 
-{{< display-math >}}
-\operatorname{DFT} (P) = \operatorname{DFT} (A) + i \operatorname{DFT} (B)
-{{< /display-math >}}
+通过图可以看出，FFT 的过程即是先把多项式从根推到叶子，即求得所有单位根处的值，做完操作后，再从叶子推回根。
 
-由于 $A, B$
-都是实多项式，注意到共轭复数的性质：$\operatorname{conj} (z_1) \operatorname{cosj} (z_2) = \operatorname{conj} (z_1 z_2)$，代入有
+### Original FFT
 
-{{< display-math >}}
-\operatorname{conj} (\operatorname{DFT} (P) [j]) = \operatorname{conj} (P (\omega^j)) = \operatorname{conj} (P) \operatorname{conj} (\omega^j) = Q (\omega^{n - j}) = \operatorname{DFT} (Q) [n - j]
-{{< /display-math >}}
+当然，我们可以直接分治，便是 Original FFT。
 
-因此 2 次 DFT 可以被优化到 1 次。
+![](../img/fft-original.png)
 
-```cpp
-void FFTFFT(Comp *a, Comp *b, int len, int t) {
-    for (int i = 0; i < lim; i++)
-        a[i] = a[i] + I * b[i];
-    FFT(a, len, t);
-    for (int i = 0; i < lim; i++)
-        b[i] = a[i ? lim - i : 0].conj();
-    for (int i = 0; i < lim; i++) {
-        Comp p = a[i], q = b[i];
-        a[i] = (p + q) * 0.5;
-        b[i] = (q - p) * 0.5 * I;
-    }
-}
-```
+由于篇幅有限，本文不展开。
 
-故 2 次 DFT 和 2 次 IDFT。
+### 预处理单位根
+
+每次计算都重新计算一遍单位根太浪费了，这一部分可以预处理。
 
 ```cpp
-int main() {
-    //...
-    FFT_init(lim);
-    FFTFFT(a0, a1, lim, 1);
-    FFTFFT(b0, b1, lim, 1);
-    for (int i = 0; i < lim; i++) {
-        p[i] = a0[i] * b0[i] + I * a1[i] * b0[i];
-        q[i] = a0[i] * b1[i] + I * a1[i] * b1[i];
-    }
-    FFT(p, lim, -1);
-    FFT(q, lim, -1);
-    for (int i = 0; i <= n + m; i++) {
-        ll a1b1 = ld2ll(p[i].x) % mod;
-        ll a1b0 = ld2ll(p[i].y) % mod;
-        ll a0b1 = ld2ll(q[i].x) % mod;
-        ll a0b0 = ld2ll(q[i].y) % mod;
-        ll ans = ((tLIM * a1b1 + (a1b0 + a0b1)) * tLIM + a0b0) % mod;
-        printf("%lld ", (ans + mod) % mod);
-    }
-    //...
-}
-```
+vector<img> ROOT;
 
-### 实现二
-
-还有另一种拆法。设
-
-{{< display-math >}}
-P_1 = A_1 + i A_0, P_2 = A_1 - i A_0, Q = B_1 + i B_0
-{{< /display-math >}}
-
-乘法有
-
-{{< display-math >}}
-\begin{aligned}
-T_1 = P_1 Q & = A_1 B_1 - A_0 B_0 + i (A_1 B_0 + A_0 B_1)\\
-T_2 = P_2 Q & = A_1 B_1 + A_0 B_0 + i (A_1 B_0 - A_0 B_1)
-\end{aligned}
-{{< /display-math >}}
-
-可以很容易的从中分离出我们需要的系数。故 3 次 DFT，2 次 IDFT。
-
-此方法实现简单，理解容易，而且常数较小，不输 4 次 DFT。（也可能是我姿势不对）
-
-```cpp
-int main() {
-    //...
-    FFT_init(lim);
-    FFT(P1, lim, 1);
-    FFT(P2, lim, 1);
-    FFT(Q, lim, 1);
-    for (int i = 0; i < lim; i++)
-        P1[i] = P1[i] * Q[i];
-    for (int i = 0; i < lim; i++)
-        P2[i] = P2[i] * Q[i];
-    FFT(P1, lim, -1);
-    FFT(P2, lim, -1);
-    for (int i = 0; i <= m + n; i++) {
-        ll a1b1 = ld2ll((P1[i].x + P2[i].x) / 2) % p;
-        ll a1b2 = ld2ll((P1[i].y + P2[i].y) / 2) % p;
-        ll a2b1 = ld2ll((P1[i].y - P2[i].y) / 2) % p;
-        ll a2b2 = ld2ll((P2[i].x - P1[i].x) / 2) % p;
-        ll ans = ((a1b1 * tLIM + (a1b2 + a2b1)) * tLIM + a2b2) % p;
-        printf("%lld ", (ans + p) % p);
-    }
-    //...
-}
-```
-
-## 应用
-
-### FFT P3803 多项式乘法
-
-实战一下：[P3803 多项式乘法](https://www.luogu.com.cn/problem/P3803)。
-
-我们的计算步骤是：
-
-```cpp
-FFT(F, lim, 1);
-FFT(G, lim, 1);
-for (int i = 0; i <= lim; i++)
-    F[i] = F[i] * G[i];
-FFT(F, lim, -1);
-```
-
-实际上，我们并不用三次 FFT，两次足以。注意到若把 $F(x)$ 放在实部而 $G(x)$ 放在虚部
-
-{{< display-math >}}
-(F + iG)^2 = (F^2-G^2) + 2iFG
-{{< /display-math >}}
-
-平方之后虚部恰是答案。
-
-这里展示全部的代码，帮助大家理解。
-
-{{< fold summary="FFT 模板（P3803 多项式乘法）" >}}
-```cpp
-const double PI = acos(-1.0);
-
-const int MAXN = 4e6 + 10;
-
-struct Comp {
-    double x, y;
-    Comp(double xx = 0, double yy = 0) {
-        x = xx, y = yy;
-    }
-    Comp operator+(Comp c) {
-        return Comp(x + c.x, y + c.y);
-    }
-    Comp operator-(Comp c) {
-        return Comp(x - c.x, y - c.y);
-    }
-    Comp operator*(Comp c) {
-        double tx = x * c.x - y * c.y;
-        double ty = x * c.y + y * c.x;
-        return Comp(tx, ty);
-    }
-};
-
-Comp ff[MAXN];
-int rev[MAXN];
-
-void FFT(Comp *f, int n, int type) {
-    for (int i = 0; i < n; ++i) {
-        if (i < rev[i]) {
-            swap(f[i], f[rev[i]]);
-        }
-    }
-    for (int h = 2; h <= n; h <<= 1) {
-        Comp step(cos(2 * PI / h), sin(2 * PI * type / h));
-        for (int j = 0; j < n; j += h) {
-            Comp cur(1, 0);
-            for (int k = j; k < j + h / 2; k++) {
-                Comp f1 = f[k], f2 = f[k + h / 2];
-                f[k] = f1 + cur * f2;
-                f[k + h / 2] = f1 - cur * f2;
-                cur = cur * step;
-            }
-        }
-    }
-    if (type == 1)  return;
-    for (int i = 0; i < n; i++)
-        f[i].x /= n, f[i].y /= n;
-}
-
-int main() {
-    int n = rr(), m = rr();
-    for (int i = 0; i <= n; i++)
-        ff[i].x = rr();
-    for (int i = 0; i <= m; i++)
-        ff[i].y = rr();
-
-    int lim = 1, lim_2;
-    while (lim <= n + m)
-        lim <<= 1;
-    lim_2 = lim >> 1;
-    for (int i = 0; i < lim; ++i)
-        rev[i] = (rev[i >> 1] >> 1) | ((i & 1) * lim_2);
-
-    FFT(ff, lim, 1);
-
-    for (int i = 0; i <= lim; i++)
-        ff[i] = ff[i] * ff[i];
-
-    FFT(ff, lim, -1);
-    
-    for (int i = 0; i <= m + n; i++)
-        printf("%d ", int(ff[i].y / 2 + 0.5));
-    return 0;
-}
-```
-{{< /fold >}}
-
-### NTT P3803 多项式乘法
-
-NTT 再来一遍。
-
-{{< fold summary="NTT 模板（P3803 多项式乘法）" >}}
-```cpp
-const ll mod = 998244353, g = 3;
-const ll MAXN = 4e6 + 10;
-
-ll qpow(ll a, ll b, ll p = mod) {
-    ll ret = p != 1;
-    for (; b; b >>= 1) {
-        if (b & 1)
-            ret = a * ret % p;
-        a = a * a % p;
-    }
-    return ret;
-}
-
-ll inv(ll a) {
-    return qpow(a, mod - 2);
-}
-
-ll mo(ll n) {
-    return (n + mod) % mod;
-}
-
-const ll g_inv = inv(g);
-
-ll ff[MAXN], gg[MAXN];
-int rev[MAXN];
-
-void NTT(ll *f, int n, int type) {
-    for (int i = 0; i < n; ++i) {
-        if (i < rev[i]) {
-            swap(f[i], f[rev[i]]);
-        }
-    }
-    for (int h = 2; h <= n; h <<= 1) {
-        ll tg = type == 1 ? 3 : g_inv;
-        ll gn = qpow(tg, (mod - 1) / h);
-        for (int j = 0; j < n; j += h) {
-            ll g = 1;
-            for (int k = j; k < j + h / 2; k++) {
-                ll f1 = f[k], f2 = g * f[k + h / 2] % mod;
-                f[k] = mo(f1 + f2);
-                f[k + h / 2] = mo(f1 - f2);
-                g = g * gn % mod;
-            }
-        }
-    }
-    if (type == 1)
+void init(int n) {
+    static int lim = (ROOT = {{1, 0}}, 1);
+    if (lim >= n)
         return;
-    ll lim_inv = inv(n);
-    for (int i = 0; i < n; i++)
-        f[i] = f[i] * lim_inv % mod;
-}
-
-int main() {
-    int n = rr(), m = rr();
-    for (int i = 0; i <= n; i++)
-        ff[i] = rr();
-    for (int i = 0; i <= m; i++)
-        gg[i] = rr();
-
-    int lim = 1, lim_2;
-    while (lim <= n + m)
-        lim <<= 1;
-    lim_2 = lim >> 1;
-    for (int i = 0; i < lim; ++i)
-        rev[i] = (rev[i >> 1] >> 1) | ((i & 1) * lim_2);
-
-    NTT(ff, lim, 1);
-    NTT(gg, lim, 1);
-
-    for (int i = 0; i <= lim; i++)
-        ff[i] = ff[i] * gg[i];
-
-    NTT(ff, lim, -1);
-
-    for (int i = 0; i <= m + n; i++)
-        printf("%lld ", ff[i]);
-    return 0;
+    ROOT.resize(n);
+    for (int l = lim; l < n; l *= 2) {
+        img w = {cos(PI / l / 2), sin(PI / l / 2)};
+        ROOT[l] = w;
+        for (int i = 1; i < l; ++i)
+            ROOT[i + l] = ROOT[i] * w;
+    }
+    lim = n;
 }
 ```
-{{< /fold >}}
-
-### FFT P4245 任意模数多项式乘法
-
-实现一。
-
-{{< fold summary="拆系数 FFT 模板（实现一，P4245 任意模数多项式乘法）" >}}
-```cpp
-const ll MAXN = 4e5 + 10;
-const ll tLIM = 1 << 15;
-const long double PI = acos(-1);
-
-struct Comp {
-    ld x, y;
-    Comp(ld xx = 0, ld yy = 0) {
-        x = xx, y = yy;
-    }
-    Comp operator+(Comp c) {
-        return Comp(x + c.x, y + c.y);
-    }
-    Comp operator-(Comp c) {
-        return Comp(x - c.x, y - c.y);
-    }
-    Comp operator*(Comp c) {
-        ld tx = x * c.x - y * c.y;
-        ld ty = x * c.y + y * c.x;
-        return Comp(tx, ty);
-    }
-    Comp conj(int type = -1) {
-        return Comp(x, type * y);
-    }
-};
-
-Comp I(0, 1);
-int rev[MAXN];
-Comp Wn[MAXN];
-
-void FFT(Comp *f, int n, int type) {
-    for (int i = 0; i < n; ++i) {
-        if (i < rev[i]) {
-            swap(f[i], f[rev[i]]);
-        }
-    }
-    for (int h = 2; h <= n; h <<= 1) {
-        Comp step = Wn[h].conj(type);
-        for (int j = 0; j < n; j += h) {
-            Comp cur(1, 0);
-            for (int k = j; k < j + h / 2; k++) {
-                Comp f1 = f[k], f2 = f[k + h / 2];
-                f[k] = f1 + cur * f2;
-                f[k + h / 2] = f1 - cur * f2;
-                cur = cur * step;
-            }
-        }
-    }
-    if (type == 1)
-        return;
-    for (int i = 0; i < n; i++)
-        f[i].x /= n, f[i].y /= n;
-}
-
-int mod;
-
-inline void FFTFFT(Comp *a, Comp *b, int len, int t) {
-    for (int i = 0; i < len; i++)
-        a[i] = a[i] + I * b[i];
-    FFT(a, len, t);
-    for (int i = 0; i < len; i++)
-        b[i] = a[i ? len - i : 0].conj();
-    for (int i = 0; i < len; i++) {
-        Comp p = a[i], q = b[i];
-        a[i] = (p + q) * 0.5;
-        b[i] = (q - p) * 0.5 * I;
-    }
-}
-
-Comp a0[MAXN], a1[MAXN], b0[MAXN], b1[MAXN];
-Comp p[MAXN], q[MAXN];
-
-void FFT_init(ll lim) {
-    ll lim_2 = lim >> 1;
-    for (int i = 0; i < lim; ++i)
-        rev[i] = (rev[i >> 1] >> 1) | ((i & 1) * lim_2);
-    for (int i = 1; i <= lim; ++i)
-        Wn[i] = Comp(cos(2 * PI / i), sin(2 * PI / i));
-}
-ll ld2ll(ld n) {
-    return ll(n + 0.5);
-}
-int main() {
-    int n = rr(), m = rr();
-    mod = rr();
-
-    for (int i = 0; i <= n; i++) {
-        int x = rr() % mod;
-        a0[i].x = x / tLIM;
-        a1[i].x = x % tLIM;
-    }
-    for (int i = 0; i <= m; i++) {
-        int x = rr() % mod;
-        b0[i].x = x / tLIM;
-        b1[i].x = x % tLIM;
-    }
-
-    int lim = 1;
-    while (lim < n + m + 1)
-        lim <<= 1;
-
-    FFT_init(lim);
-
-    FFTFFT(a0, a1, lim, 1);
-    FFTFFT(b0, b1, lim, 1);
-
-    for (int i = 0; i < lim; i++) {
-        p[i] = a0[i] * b0[i] + I * a1[i] * b0[i];
-        q[i] = a0[i] * b1[i] + I * a1[i] * b1[i];
-    }
-
-    FFT(p, lim, -1);
-    FFT(q, lim, -1);
-
-    for (int i = 0; i <= n + m; i++) {
-        ll a1b1 = ld2ll(p[i].x) % mod;
-        ll a1b0 = ld2ll(p[i].y) % mod;
-        ll a0b1 = ld2ll(q[i].x) % mod;
-        ll a0b0 = ld2ll(q[i].y) % mod;
-        ll ans = ((tLIM * a1b1 + (a1b0 + a0b1)) * tLIM + a0b0) % mod;
-        printf("%lld ", (ans + mod) % mod);
-    }
-    return 0;
-}
-```
-{{< /fold >}}
-
-
-实现二。
-
-{{< fold summary="拆系数 FFT 模板（实现二，P4245 任意模数多项式乘法）" >}}
-```cpp
-const ll MAXN = 4e5 + 10;
-const ll tLIM = 1 << 15;
-const long double PI = acos(-1);
-
-int n, m, p, rev[MAXN];
-
-struct Comp {
-    ld x, y;
-    Comp(ld xx = 0, ld yy = 0) {
-        x = xx, y = yy;
-    }
-    Comp operator+(Comp c) {
-        return Comp(x + c.x, y + c.y);
-    }
-    Comp operator-(Comp c) {
-        return Comp(x - c.x, y - c.y);
-    }
-    Comp operator*(Comp c) {
-        ld tx = x * c.x - y * c.y;
-        ld ty = x * c.y + y * c.x;
-        return Comp(tx, ty);
-    }
-    Comp conj(int type = -1) {
-        return Comp(x, type * y);
-    }
-};
-Comp P1[MAXN], P2[MAXN], Q[MAXN], Wn[MAXN];
-void FFT(Comp *f, int n, int type) {
-    for (int i = 0; i < n; ++i) {
-        if (i < rev[i]) {
-            swap(f[i], f[rev[i]]);
-        }
-    }
-    for (int h = 2; h <= n; h <<= 1) {
-        Comp step = Wn[h].conj(type);
-        for (int j = 0; j < n; j += h) {
-            Comp cur(1, 0);
-            for (int k = j; k < j + h / 2; k++) {
-                Comp f1 = f[k], f2 = f[k + h / 2];
-                f[k] = f1 + cur * f2;
-                f[k + h / 2] = f1 - cur * f2;
-                cur = cur * step;
-            }
-        }
-    }
-    if (type == 1)
-        return;
-    for (int i = 0; i < n; i++)
-        f[i].x /= n, f[i].y /= n;
-}
-
-ll ld2ll(ld n) {
-    return ll(n + 0.5);
-}
-
-void FFT_init(ll lim) {
-    ll lim_2 = lim >> 1;
-    for (int i = 0; i < lim; ++i)
-        rev[i] = (rev[i >> 1] >> 1) | ((i & 1) * lim_2);
-    for (int i = 1; i <= lim; ++i)
-        Wn[i] = Comp(cos(2 * PI / i), sin(2 * PI / i));
-}
-
-int main() {
-    scanf("%d%d%d", &n, &m, &p);
-    for (int i = 0; i <= n; i++) {
-        ll t = rr();
-        P1[i] = Comp(t / tLIM, t % tLIM);
-        P2[i] = Comp(t / tLIM, -t % tLIM);
-    }
-    for (int i = 0; i <= m; i++) {
-        ll t = rr();
-        Q[i] = Comp(t / tLIM, t % tLIM);
-    }
-    int lim = 1, lim_2;
-    while (lim <= n + m)
-        lim <<= 1;
-    FFT_init(lim);
-    FFT(P1, lim, 1);
-    FFT(P2, lim, 1);
-    FFT(Q, lim, 1);
-    for (int i = 0; i < lim; i++)
-        P1[i] = P1[i] * Q[i];
-    for (int i = 0; i < lim; i++)
-        P2[i] = P2[i] * Q[i];
-    FFT(P1, lim, -1);
-    FFT(P2, lim, -1);
-    for (int i = 0; i <= m + n; i++) {
-        ll a1b1 = ld2ll((P1[i].x + P2[i].x) / 2) % p;
-        ll a1b2 = ld2ll((P1[i].y + P2[i].y) / 2) % p;
-        ll a2b1 = ld2ll((P1[i].y - P2[i].y) / 2) % p;
-        ll a2b2 = ld2ll((P2[i].x - P1[i].x) / 2) % p;
-        ll ans = ((a1b1 * tLIM + (a1b2 + a2b1)) * tLIM + a2b2) % p;
-        printf("%lld ", (ans + p) % p);
-    }
-    return 0;
-}
-```
-{{< /fold >}}
 
 ### 其他应用
 
 FFT 实际上是一个工具，用于快速计算卷积，这篇文章我想更聚焦于理解 FFT 的计算过程。
 
 FFT 还有很多应用，比如快速加法，带通配文本匹配等，后面等再刷些题了可能会开一篇讲一讲这个，现在我积累的还不够。
+
+## Refence
+
+1. [OI-Wiki 快速傅里叶变换](https://oi-wiki.org/math/poly/fft/)
+2. [FFT 入门笔记 - hly1024](https://loj.ac/d/3165)
