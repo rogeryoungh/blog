@@ -12,19 +12,6 @@ katex: true
 
 ## 修公式
 
-当我把文档从 TeXmacs 转到博客时，发现公式没有渲染，看了半天才明白是下划线被转成 `<em>` 标签。
+Markdown 和 TeX 对下划线的解释不一样，还有很多其他的转义问题，导致 KaTeX 不能在浏览器中正常渲染。
 
-解决办法是创建 Hugo 的 shortcode，可以设定其不被 Markdown 解析。在主题创建 `layouts/shortcodes/display-math.html`，内容是
-
-```html
-<p> $${{ .Inner }}$$ </p>
-```
-
-现在行间公式改为如下包裹
-
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-html hljs xml" data-lang="html">{{&lt; display-math &gt;}}
-(\operatorname{DFT}_{\omega})^{-1} = \frac{1}{n} (\operatorname{DFT}_{-1})
-{{&lt; /display-math &gt;}}
-</code></pre><button class="copy-code">copy</button></div>
-
-行内公式也是一样，但是因为行内公式很少特别复杂，所以我只改了行间公式。
+解决办法是我写了一个[小脚本](https://github.com/rogeryoungh/preprocessor-md-tex)，它能够提前对字符串进行转义，这样 hugo 吐出来的恰是原内容，就可以正常渲染了。

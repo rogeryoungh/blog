@@ -6,9 +6,9 @@ theme: "paper-mod"
 
 menu:
   main:
-    - name: Posts
-      url: post
-      weight: 1
+    # - name: Posts
+    #   url: post
+    #   weight: 1
     - name: Archive
       url: archives
       weight: 5
