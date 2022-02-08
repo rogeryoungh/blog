@@ -7,7 +7,16 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
     <copyright>© 2021 [Roger Young](/blog)</copyright>
-    <lastBuildDate>Thu, 22 Jul 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://rogeryoungh.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Wed, 19 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://rogeryoungh.github.io/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>多项式牛顿迭代的分块优化</title>
+      <link>https://rogeryoungh.github.io/blog/post/poly-newton/</link>
+      <pubDate>Wed, 19 Jan 2022 00:00:00 +0000</pubDate>
+      
+      <guid>https://rogeryoungh.github.io/blog/post/poly-newton/</guid>
+      <description>STL 好厉害。</description>
+    </item>
+    
     <item>
       <title>FFT &amp; NTT 学习笔记</title>
       <link>https://rogeryoungh.github.io/blog/post/learn-fft/</link>
