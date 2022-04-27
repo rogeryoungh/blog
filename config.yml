@@ -9,7 +9,7 @@ menu:
     # - name: Posts
     #   url: post
     #   weight: 1
-    - name: Archive
+    - name: Posts
       url: archives
       weight: 5
     - name: Search
@@ -33,7 +33,7 @@ markup:
     renderer:
       unsafe: true
 
-Copyright: © 2021 [Roger Young](/blog)
+Copyright: © 2022 [Roger Young](/blog)
 
 params:
   ShowCodeCopyButtons: true
@@ -45,7 +45,10 @@ params:
     enabled: true
     title: "Roger Young" # optional default will be site title
     subtitle: "Welcome to my blog!"
-    imageUrl: "/blog/avatar.png" # optional
+    imageUrl: https://cdn.jsdelivr.net/gh/rogeryoungh/blog@gh-pages/avatar.png
+    buttons:
+    - name: All of my Posts
+      url: "./archives"
   comments: true
   valine:
     enable: true
