@@ -6,4 +6,4 @@ chmod +x preprocessor-md-tex
 ./preprocessor-md-tex ./content
 
 # Hugo
-cd hugo
+hugo
