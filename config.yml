@@ -1,4 +1,4 @@
-baseURL: "https://rogeryoungh.github.io/blog"
+baseURL: "https://blog.rogery.dev/"
 languageCode: "zh"
 title: "Roger Young"
 theme: "paper-mod"
@@ -33,7 +33,7 @@ markup:
     renderer:
       unsafe: true
 
-Copyright: © 2022 [Roger Young](/blog)
+Copyright: © 2022 [Roger Young](https://blog.rogery.dev/)
 
 params:
   ShowCodeCopyButtons: true
@@ -45,7 +45,7 @@ params:
     enabled: true
     title: "Roger Young" # optional default will be site title
     subtitle: "Welcome to my blog!"
-    imageUrl: https://cdn.jsdelivr.net/gh/rogeryoungh/blog@gh-pages/avatar.png
+    imageUrl: /avatar.png
     buttons:
     - name: All of my Posts
       url: "./archives"
