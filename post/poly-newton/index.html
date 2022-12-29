@@ -1,677 +1,492 @@
 <!DOCTYPE html>
-<html lang="en" dir="auto">
+<html><head>
 
-<head><meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<meta name="robots" content="index, follow">
-<title>多项式牛顿迭代的分块优化 | Roger Young</title>
-<meta name="keywords" content="" />
-<meta name="description" content="STL 好厉害。">
-<meta name="author" content="rogeryoungh">
-<link rel="canonical" href="https://blog.rogery.dev/post/poly-newton/" />
-<link crossorigin="anonymous" href="/assets/css/stylesheet.min.516fb8b590ac7d538e32093f4a6811588662ee6b96d207ce1d68927839cf0186.css" integrity="sha256-UW&#43;4tZCsfVOOMgk/SmgRWIZi7muW0gfOHWiSeDnPAYY=" rel="preload stylesheet" as="style">
-<link rel="preload" href="/avatar.png" as="image">
-<script defer crossorigin="anonymous" src="/assets/js/highlight.min.44cb45f8abae54a98af6fda705c3c65435bf14db21d0bb9ae6539620f9a0e74c.js" integrity="sha256-RMtF&#43;KuuVKmK9v2nBcPGVDW/FNsh0Lua5lOWIPmg50w="
-    onload="hljs.initHighlightingOnLoad();"></script>
-<link rel="icon" href="https://blog.rogery.dev/favicon.ico">
-<link rel="icon" type="image/png" sizes="16x16" href="https://blog.rogery.dev/favicon-16x16.png">
-<link rel="icon" type="image/png" sizes="32x32" href="https://blog.rogery.dev/favicon-32x32.png">
-<link rel="apple-touch-icon" href="https://blog.rogery.dev/apple-touch-icon.png">
-<link rel="mask-icon" href="https://blog.rogery.dev/safari-pinned-tab.svg">
-<meta name="theme-color" content="#2e2e33">
-<meta name="msapplication-TileColor" content="#2e2e33">
-<meta name="generator" content="Hugo 0.100.1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css">
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js"
-    onload="renderMathInElement(document.body);"></script>
+  <meta name="generator" content="Hugo 0.110.0-DEV">
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        renderMathInElement(document.body, {
-            
-            
-            delimiters: [
-                { left: '$$', right: '$$', display: true },
-                { left: '$', right: '$', display: false },
-                { left: '\\(', right: '\\)', display: false },
-                { left: '\\[', right: '\\]', display: true }
-            ],
-            
-            throwOnError: false
-        });
-    });
-</script>
+  
+  
+  <link rel="stylesheet" href="/scss/index.min.95ba81376e079da48068412714d3b5b407c6cec0c5edbf6ebc255278b7938d7c.css">
 
-
-
-
-<meta property="og:title" content="多项式牛顿迭代的分块优化" />
-<meta property="og:description" content="STL 好厉害。" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://blog.rogery.dev/post/poly-newton/" /><meta property="article:section" content="post" />
-<meta property="article:published_time" content="2022-01-19T00:00:00&#43;00:00" />
-<meta property="article:modified_time" content="2022-01-19T00:00:00&#43;00:00" />
-
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="多项式牛顿迭代的分块优化"/>
-<meta name="twitter:description" content="STL 好厉害。"/>
-
-
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BreadcrumbList",
-  "itemListElement": [
-    {
-      "@type": "ListItem",
-      "position":  1 ,
-      "name": "Posts",
-      "item": "https://blog.rogery.dev/post/"
-    }, 
-    {
-      "@type": "ListItem",
-      "position":  2 ,
-      "name": "多项式牛顿迭代的分块优化",
-      "item": "https://blog.rogery.dev/post/poly-newton/"
-    }
-  ]
-}
-</script>
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  "headline": "多项式牛顿迭代的分块优化",
-  "name": "多项式牛顿迭代的分块优化",
-  "description": "STL 好厉害。",
-  "keywords": [
-    
-  ],
-  "articleBody": "草稿。。。\n半在线卷积可以多叉，牛顿迭代怎么就不能多叉呢。\n在本文我们利用分块得到了 sqrt(8E)，inv(10E)，div(10E)，exp(14E)，相比以前有了一定的常数提升。\n本文可以看作 Faster algorithms for the square root and reciprocal of power series 和 Faster exponentials of power series 的翻译。原论文还有 inv(8.66E) 和 exp(13E) 的算法，但是过于复杂了，我没有尝试。\n初次写文，好多地方不规范，欢迎指教。\n分块原理 对于两个长为 $mr$ 多项式 $f, g$，我们把 $f$ 分成 $r$ 块，分别记做\n$$ f_{[0]}, f_{[1]}, \\cdots, f_{[r-1]} $$\n对于 $g$ 类似，为了简化描述，我们记 $X = x^m$。\n其乘积有一些额外的项，拿 $r=2$ 举例\n$$ fg = f_{[0]} \\ast g_{[0]} + (f_{[0]} \\ast g_{[1]} + f_{[1]} \\ast g_{[0]}) X + f_{[1]} \\ast g_{[1]} X^2 $$\n注意\n$$ (fg)_{[1]} \\neq \\left(f_{[0]} \\ast g_{[1]} + f_{[1]} \\ast g_{[0]}\\right) \\bmod X $$\n因为 $f_{[0]} \\ast g_{[0]}$ 是 $2m$ 项的，可以用循环卷积转回去。写全即是\n$$ (fg)_{[1]} = \\left(f_{[0]} \\ast g_{[1]} + f_{[1]} \\ast g_{[0]} + f_{[0]} \\ast g_{[0]} \\ast X\\right) \\bmod (X^2 - 1) \\bmod X $$\n一般的，对于 $fg$ 的第 $k$ 块，有公式\n$$ (f g)_{[k]} = \\left(\\sum_{i=0}^{k} f_{[i]} \\ast g_{[k-i]} + \\sum_{i=0}^{k-1} f_{[i]} \\ast g_{[k-1-i]} \\ast X\\right) \\bmod (X^2 - 1) \\bmod X $$\n所以我们对应的计算过程为\n$$ \\mathcal{F}_{2m}^{-1}\\left(\\sum_{i=0}^{k} \\mathcal{F}_{2m}(f_{[i]}) \\cdot \\mathcal{F}_{2m}(g_{[k-i]}) + \\sum_{i=0}^{k-1} \\mathcal{F}_{2m}(f_{[i]}) \\cdot \\mathcal{F}_{2m}(g_{[k-1-i]}) \\cdot \\mathcal{F}_{2m}(X)\\right) $$\n而 $\\mathcal{F}_{2m}(X) = (-1)^j$，无需计算。即在各块的 DFT 已经计算好的情况下，我们只需要一次 IDFT 就可以算出第 $k$ 块。\n平方根 $g^2 = f$ 这个东西其实和半在线卷积很像，只不过 relax 最后归于一个点，而这里是一整块在迭代。\n类似于普通牛顿迭代，假设 $g_{[0]}, \\cdots, g_{[k-1]}$ 已经给出，那么观察缺少 $g_{[k]}$ 所造成的影响\n$$ \\begin{aligned} (g_{[0]}+ \\cdots+ g_{[k-1]} X^{k-1})^2 \u0026= f_{[0]} + \\cdots + \\psi X^{k} + \\cdots \\\\ (g_{[0]}+ \\cdots+ g_{[k]} X^{k})^2 \u0026= f_{[0]} + \\cdots + f_{[k]} X^{k} + \\cdots \\end{aligned} $$\n即得\n$$ f_{[k]} - \\psi = 2 g_{[0]} \\ast g_{[k]} \\bmod X $$\n具体的步骤是\n给定 $g_{[0]}$，预计算 $h = (g_{[0]})^{-1}$，可以使用任何 6E 的算法。 计算 $\\mathcal{F}_{2m}(h)$，花费 2E。 假设要计算第 $k$ 块。 计算 $\\mathcal{F}_{2m}(g_{[k-1]})$，花费 2E。 计算 $\\psi$，用前述优化只需一次 IDFT，花费 2E。 计算 $g_{[k]} \\gets \\frac{1}{2} h \\ast (f_{[k]} - \\psi) \\bmod X$，花费 4E。 总之，根据论文估计，若我们通过分成 $r \\to \\infty$ 块计算，大概开销是 8E。\nPoly Poly::sqrt() const { if (deg() == 1) { return {front().sqrt()}; } const int R = 16, iv2 = qpow(2); int m = get_lim((deg() - 1) / R + 1); Poly x = cut(m).sqrt(), h = x.inv().ntt(m * 2); vector\u003cPoly\u003e ng(R); for (int k = 1; x.deg() \u003c deg(); k++) { ng[k - 1] = x.cut(m, (k - 1) * m).ntt(m * 2); Poly psi(m * 2); for (int j = 0; j \u003c k; j++) { if (j \u003e= 1) { for (int i = 0; i \u003c m; i++) psi[i] -= ng[j][i] * (ng[k - j][i] + ng[k - 1 - j][i]); for (int i = m; i \u003c m * 2; i++) psi[i] -= ng[j][i] * (ng[k - j][i] - ng[k - 1 - j][i]); } else { for (int i = 0; i \u003c m; i++) psi[i] -= ng[j][i] * ng[k - 1 - j][i]; for (int i = m; i \u003c m * 2; i++) psi[i] += ng[j][i] * ng[k - 1 - j][i]; } } psi.intt(m * 2).fillZeroH(m * 2); for (int j = 0; j \u003c min(m, deg() - m * k); j++) psi[j] += (*this)[m * k + j]; mul(psi, h, m * 2); x.redeg((k + 1) * m); for (int i = 0; i \u003c m; i++) x[m * k + i] = psi[i] * iv2; } return x.cut(deg()); } 实际测试发现，迭代写法常数对 $r$ 敏感，猜测是 inv 开销过大，算足 $r$ 次才有优势，递归在划分上比迭代更好。块数 $r$ 可以不是 $2$ 的幂。\n代码请看 提交。\n倒数 $f \\ast g = 1$ 其分块形式是\n$$ 0 - \\psi = f_{[0]} \\ast g_{[k]} \\bmod X $$\n具体的步骤是\n给定 $g_{[0]}$，而 $h = (f_{[0]})^{-1} = g_{[0]}$，不用计算。 假设要计算第 $k$ 块。 计算 $\\mathcal{F}_{2m}(g_{[k-1]})$ 和 $\\mathcal{F}_{2m}(f_{[k]})$，花费 4E。 计算 $\\psi$，花费 2E。 计算 $g_{[k]} \\gets -h \\ast \\psi \\bmod X$，花费 4E。 Poly Poly::inv() const { // 10E if (deg() == 1) { return {front().inv()}; } const int R = 16; int m = get_lim((deg() - 1) / R + 1); Poly x = cut(m).inv(); vector\u003cPoly\u003e nf(R), ng(R); nf[0] = cut(m).ntt(m * 2); for (int k = 1; x.deg() \u003c deg(); k++) { nf[k] = cut(m, k * m).ntt(m * 2); // 2E ng[k - 1] = x.cut(m, (k - 1) * m).ntt(m * 2); // 2E Poly psi(m * 2); for (int j = 0; j \u003c k; j++) { for (int i = 0; i \u003c m; i++) psi[i] -= ng[j][i] * (nf[k - j][i] + nf[k - 1 - j][i]); for (int i = m; i \u003c m * 2; i++) psi[i] -= ng[j][i] * (nf[k - j][i] - nf[k - 1 - j][i]); } psi.intt(m * 2).fillZeroH(m * 2); // 2E mul(psi, ng[0], m * 2); // 4E x.redeg((k + 1) * m); for (int i = 0; i \u003c m; i++) x[m * k + i] = psi[i]; } return x.cut(deg()); } 当 $r \\to \\infty$ 时，开销大概是 10E。代码请看 提交。\n原论文中分成 $3s$ 块，前面一块方法相同，后面两块通过更优的复用做到了 $26/3 = 8.66 \\mathsf{E}$。我还没有阅读，感兴趣的可以尝试。\n商数 $f \\ast g = d$ 论文里没有这个，我觉得右边加个 $d$ 没啥影响，试了试的确可以。\n$$ d_{[k]} - \\psi = f_{[0]} \\ast g_{[k]} \\bmod X $$\n因为 $d$ 不需要做 DFT，故与倒数的方法基本相同，这里不重复了。\nPoly Poly::div(Poly f) const { // 10E if (deg() == 1) { return {front() * f[0].inv()}; } f.redeg(deg()); const int R = 16; int m = get_lim((deg() - 1) / R + 1); Poly x = cut(m).div(f), h = f.cut(m).inv().ntt(m * 2); vector\u003cPoly\u003e nf(R), ng(R); nf[0] = f.cut(m).ntt(m * 2); for (int k = 1; x.deg() \u003c deg(); k++) { nf[k] = f.cut(m, k * m).ntt(m * 2); ng[k - 1] = x.cut(m, (k - 1) * m).ntt(m * 2); Poly psi(m * 2); for (int j = 0; j \u003c k; j++) { for (int i = 0; i \u003c m; i++) psi[i] -= ng[j][i] * (nf[k - j][i] + nf[k - 1 - j][i]); for (int i = m; i \u003c m * 2; i++) psi[i] -= ng[j][i] * (nf[k - j][i] - nf[k - 1 - j][i]); } psi.intt(m * 2).fillZeroH(m * 2); for (int j = 0; j \u003c min(m, deg() - m * k); j++) psi[j] += (*this)[m * k + j]; mul(psi, h, m * 2); x.redeg((k + 1) * m); for (int i = 0; i \u003c m; i++) x[m * k + i] = psi[i]; } return x.cut(deg()); } 当 $r \\to \\infty$ 时，开销大概是 10E。代码请看 提交。\n指数 $g = e^f$ 指数与前者不同，其微分方程 $\\Delta g = \\Delta f \\ast g$ 左右都有 $g$，不能直接算。\n类似的，写作分块形式\n$$ (\\Delta g)_{[k]} - \\psi = g_{[k]} \\ast (\\Delta f)_{[0]} \\bmod X $$\n为了方便起见，我们记 $\\Delta_{k}f = X^{-k} \\Delta(X^k f)$，有\n$$ \\Delta (f_{[0]} + f_{[1]} X + \\cdots) = (\\Delta_0 f_{[0]}) + (\\Delta_1 f_{[1]}) + \\cdots $$\n令 $u = (g_{[0]})^{-1}$，注意到\n$$ \\Delta u = \\Delta \\exp (-f_{[0]}) = -u \\ast \\Delta f_{[0]} $$\n因此\n$$ \\begin{aligned} \\phi = u \\ast \\psi \u0026= u \\ast (\\Delta g)_{[k]} - u \\ast g_{[k]} \\ast (\\Delta_f)_{[0]}\\\\ \u0026= u \\ast (\\Delta g)_{[k]} + g_{[k]} \\ast (\\Delta u) \\\\ \u0026= \\Delta_{k}(g_{[k]} \\ast u \\bmod X) \\end{aligned} $$\n如此就可以更快的取出 $g_{[k]}$ 了。\n具体的计算过程：\n给定 $g_{[0]}$。 计算 $u = (g_{[0]}) ^ {-1}$ 和 $\\mathcal{F}_{2m}(u)$，花费 6E + 2E 计算 $\\mathcal{F}_{2m}((\\Delta f)_{[0]})$，花费 2E。 假设要计算第 $k$ 块 计算 $\\mathcal{F}_{2m}((\\Delta f)_{[k]})$ 和 $\\mathcal{F}_{2m} (g_{[k-1]})$，花费 2E + 2E。 计算 $\\psi$，花费 2E。 计算 $\\phi \\gets u \\ast \\psi$，花费 4E。 计算 $g_{[k]} \\gets g_{[0]} \\ast (\\Delta_{k}^{-1} \\phi)$，花费 4E。 当 $r \\to \\infty$ 时，开销大概是 14E。代码请看 提交。\nPoly Poly::exp() const { // 14E if (deg() == 1) { return {1}; } const int S = 16; int m = get_lim((deg() - 1) / S + 1); Poly x = cut(m).exp(), u = x.inv(); vector\u003cPoly\u003e nf(S), ng(S); Poly df = *this; for (int i = 0; i \u003c df.deg(); i++) df[i] *= i; u.ntt(m * 2); nf[0] = df.cut(m).ntt(m * 2); for (int k = 1; x.deg() \u003c deg(); k++) { nf[k] = df.cut(m, k * m).ntt(m * 2); ng[k - 1] = x.cut(m, m * (k - 1)).ntt(m * 2); Poly psi(m * 2); for (int j = 0; j \u003c k; j++) { for (int i = 0; i \u003c m; i++) psi[i] += ng[j][i] * (nf[k - j][i] + nf[k - 1 - j][i]); for (int i = m; i \u003c m * 2; i++) psi[i] += ng[j][i] * (nf[k - j][i] - nf[k - 1 - j][i]); } psi.intt(m * 2).fillZeroH(m * 2); mul(psi, u, m * 2).fillZeroH(m * 2); pre_inv(m * (k + 2)); for (int i = 0; i \u003c m * 2; i++) psi[i] *= Inv[m * k + i]; mul(psi, ng[0], m * 2).fillZeroH(m * 2); x.redeg((k + 1) * m); for (int i = 0; i \u003c m; i++) x[m * k + i] = psi[i]; } return x.cut(deg()); } 原论文中分成 $2s$ 块，做到了 13E。我还没有阅读，感兴趣的可以尝试。\nRefence https://arxiv.org/abs/0910.1926\nhttps://arxiv.org/abs/0911.3110\nhttps://negiizhao.blog.uoj.ac/blog/4671\nhttps://hly1204.github.io/library/math/formal_power_series/formal_power_series.hpp\n",
-  "wordCount" : "1365",
-  "inLanguage": "en",
-  "datePublished": "2022-01-19T00:00:00Z",
-  "dateModified": "2022-01-19T00:00:00Z",
-  "author":{
-    "@type": "Person",
-    "name": "rogeryoungh"
-  },
-  "mainEntityOfPage": {
-    "@type": "WebPage",
-    "@id": "https://blog.rogery.dev/post/poly-newton/"
-  },
-  "publisher": {
-    "@type": "Organization",
-    "name": "Roger Young",
-    "logo": {
-      "@type": "ImageObject",
-      "url": "https://blog.rogery.dev/favicon.ico"
-    }
-  }
-}
-</script>
 </head>
-
-<body class="" id="top">
-<script>
-    if (localStorage.getItem("pref-font") === "serif") {
-        document.body.classList.add('serif');
-    }
-
-</script>
-<script>
-    if (localStorage.getItem("pref-theme") === "dark") {
-        document.body.classList.add('dark');
-    } else if (localStorage.getItem("pref-theme") === "light") {
-        document.body.classList.remove('dark')
-    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.body.classList.add('dark');
-    }
-
-</script>
-<noscript>
-    <style type="text/css">
-        #theme-toggle,
-        .top-link {
-            display: none;
-        }
-
-    </style>
-    <style>
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --theme: #1d1e20;
-                --entry: #2e2e33;
-                --primary: rgba(255, 255, 255, 0.84);
-                --secondary: rgba(255, 255, 255, 0.56);
-                --tertiary: rgba(255, 255, 255, 0.16);
-                --content: rgba(255, 255, 255, 0.74);
-                --hljs-bg: #2e2e33;
-                --code-bg: #37383e;
-                --border: #333;
-            }
-
-            .list {
-                background: var(--theme);
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-track {
-                background: 0 0;
-            }
-
-            .list:not(.dark)::-webkit-scrollbar-thumb {
-                border-color: var(--theme);
-            }
-        }
-
-    </style>
-</noscript>
-
-<header class="header">
-    <nav class="nav">
-        <div class="logo">
-            <a href="https://blog.rogery.dev/" accesskey="h" title="Roger Young (Alt + H)">Roger Young</a>
-            <span class="logo-switches">
-                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                    </svg>
-                </button>
-                <button id="font-toggle" accesskey="t" title="(Alt + T)">A</button>
-            </span>
-        </div>
-        <ul id="menu">
-            <li>
-                <a href="https://blog.rogery.dev/archives" title="Posts">
-                    <span>Posts</span>
-                </a>
-            </li>
-            <li>
-                <a href="https://blog.rogery.dev/search/" title="Search (Alt &#43; /)" accesskey=/>
-                    <span>Search</span>
-                </a>
-            </li>
-            <li>
-                <a href="https://blog.rogery.dev/about/" title="About">
-                    <span>About</span>
-                </a>
-            </li>
-        </ul>
-    </nav>
+<body>
+  <div id="app"><header class="py-5 text-4 flex justify-center shadow print:hidden color-primary">
+  <nav class="mx-20 w-full max-w-240 flex flex-wrap justify-center items-center whitespace-nowrap sm:flex-nowrap sm:justify-between">
+    <div class="flex basis-full items-stretch justify-center sm:basis-auto">
+      <img class="w-12 h-12 self-center" src="https://rogery.dev/img/logo.png">
+      <a class="pl-5 font-bold flex self-center text-5" href="/"> Roger Young </a>
+    </div>
+    <ul class="pl-0 flex mt-5 self-center sm:mt-0">
+      <button class="m-3 self-center" id="theme-switcher">
+        <i class="i-carbon-automatic text-4">Sun</i>
+      </button>
+      <li class="flex"><a class="m-3" href="/post">Posts</a></li>
+      <li class="flex"><a class="m-3" href="/tag">Tag</a></li>
+      <li class="flex"><a class="m-3" href="/about">About</a></li>
+    </ul>
+  </nav>
 </header>
-<main class="main">
 
-<article class="post-single">
-  <header class="post-header">
+
+<main class="px-5 flex justify-center">
+  <article class="article w-full max-w-210 my-10">
+    <header class="my-20">
+      <h1 class="text-8 text-center folt-bold"> 多项式牛顿迭代的分块优化 </h1>
+      <a
+        class="text-center-my-6 hidden print:block"
+        href="https://rogery.dev/">
+        rogeryoungh
+      </a>
+      <div class="text-center"> 2022 年 1 月 19 日 </div>
+    </header>
     
-    <h1 class="post-title">
-      多项式牛顿迭代的分块优化
-    </h1>
-    <div class="post-meta">January 19, 2022&nbsp;·&nbsp;rogeryoungh
-</div>
-  </header> <div class="toc">
-    <details >
-        <summary accesskey="c" title="(Alt + C)">
-            <div class="details">Table of Contents</div>
-        </summary>
-        <div class="inner"><ul>
-                <li>
-                    <a href="#%e5%88%86%e5%9d%97%e5%8e%9f%e7%90%86" aria-label="分块原理">分块原理</a></li>
-                <li>
-                    <a href="#%e5%b9%b3%e6%96%b9%e6%a0%b9-g2--f" aria-label="平方根 $g^2 = f$">平方根 $g^2 = f$</a></li>
-                <li>
-                    <a href="#%e5%80%92%e6%95%b0-f-ast-g--1" aria-label="倒数 $f \ast g = 1$">倒数 $f \ast g = 1$</a></li>
-                <li>
-                    <a href="#%e5%95%86%e6%95%b0-f-ast-g--d" aria-label="商数 $f \ast g = d$">商数 $f \ast g = d$</a></li>
-                <li>
-                    <a href="#%e6%8c%87%e6%95%b0-g--ef" aria-label="指数 $g = e^f$">指数 $g = e^f$</a></li>
-                <li>
-                    <a href="#refence" aria-label="Refence">Refence</a>
-                </li>
-            </ul>
-        </div>
-    </details>
-</div>
-
-  <div class="post-content"><p>草稿。。。</p>
+      <h1> 目录 </h1><nav id="TableOfContents">
+  <ol>
+    <li><a href="#分块原理">分块原理</a></li>
+    <li><a href="#平方根-g2--f">平方根 $g^2 = f$</a></li>
+    <li><a href="#倒数-f-ast-g--1">倒数 $f \ast g = 1$</a></li>
+    <li><a href="#商数-f-ast-g--d">商数 $f \ast g = d$</a></li>
+    <li><a href="#指数-g--ef">指数 $g = e^f$</a></li>
+    <li><a href="#refence">Refence</a></li>
+  </ol>
+</nav>
+    <section class="content-frame my-10">
+      <p>草稿。。。</p>
 <p>半在线卷积可以多叉，牛顿迭代怎么就不能多叉呢。</p>
 <p>在本文我们利用分块得到了 sqrt(8E)，inv(10E)，div(10E)，exp(14E)，相比以前有了一定的常数提升。</p>
 <p>本文可以看作 <a href="https://arxiv.org/abs/0910.1926">Faster algorithms for the square root and reciprocal of power series</a> 和 <a href="https://arxiv.org/abs/0911.3110">Faster exponentials of power series</a> 的翻译。原论文还有 inv(8.66E) 和 exp(13E) 的算法，但是过于复杂了，我没有尝试。</p>
 <p>初次写文，好多地方不规范，欢迎指教。</p>
-<h2 id="分块原理">分块原理<a hidden class="anchor" aria-hidden="true" href="#分块原理">#</a></h2>
-<p>对于两个长为 $mr$ 多项式 $f, g$，我们把 $f$ 分成 $r$ 块，分别记做</p>
-<p>$$ f_{[0]}, f_{[1]}, \cdots, f_{[r-1]} $$</p>
-<p>对于 $g$ 类似，为了简化描述，我们记 $X = x^m$。</p>
-<p>其乘积有一些额外的项，拿 $r=2$ 举例</p>
-<p>$$
+<h2 id="分块原理">分块原理</h2>
+<p>对于两个长为  $mr$  多项式  $f, g$ ，我们把  $f$  分成  $r$  块，分别记做</p>
+<p> $$ f_{[0]}, f_{[1]}, \cdots, f_{[r-1]} $$ </p>
+<p>对于  $g$  类似，为了简化描述，我们记  $X = x^m$ 。</p>
+<p>其乘积有一些额外的项，拿  $r=2$  举例</p>
+<p> $$
 fg = f_{[0]} \ast g_{[0]} + (f_{[0]} \ast g_{[1]} + f_{[1]} \ast g_{[0]}) X + f_{[1]} \ast g_{[1]} X^2
-$$</p>
+$$ </p>
 <p>注意</p>
-<p>$$
+<p> $$
 (fg)_{[1]} \neq \left(f_{[0]} \ast g_{[1]} + f_{[1]} \ast g_{[0]}\right)  \bmod X
-$$</p>
-<p>因为 $f_{[0]} \ast g_{[0]}$ 是 $2m$ 项的，可以用循环卷积转回去。写全即是</p>
-<p>$$
+$$ </p>
+<p>因为  $f_{[0]} \ast g_{[0]}$  是  $2m$  项的，可以用循环卷积转回去。写全即是</p>
+<p> $$
 (fg)_{[1]} = \left(f_{[0]} \ast g_{[1]} + f_{[1]} \ast g_{[0]} + f_{[0]} \ast g_{[0]} \ast X\right) \bmod (X^2 - 1) \bmod X
-$$</p>
-<p>一般的，对于 $fg$ 的第 $k$ 块，有公式</p>
-<p>$$
+$$ </p>
+<p>一般的，对于  $fg$  的第  $k$  块，有公式</p>
+<p> $$
 (f g)_{[k]} = \left(\sum_{i=0}^{k} f_{[i]} \ast g_{[k-i]} + \sum_{i=0}^{k-1} f_{[i]} \ast g_{[k-1-i]} \ast X\right) \bmod  (X^2 - 1) \bmod X
-$$</p>
+$$ </p>
 <p>所以我们对应的计算过程为</p>
-<p>$$
+<p> $$
 \mathcal{F}_{2m}^{-1}\left(\sum_{i=0}^{k} \mathcal{F}_{2m}(f_{[i]}) \cdot \mathcal{F}_{2m}(g_{[k-i]}) + \sum_{i=0}^{k-1} \mathcal{F}_{2m}(f_{[i]}) \cdot \mathcal{F}_{2m}(g_{[k-1-i]}) \cdot \mathcal{F}_{2m}(X)\right)
-$$</p>
-<p>而 $\mathcal{F}_{2m}(X) = (-1)^j$，无需计算。即在各块的 DFT 已经计算好的情况下，我们只需要一次 IDFT 就可以算出第 $k$ 块。</p>
-<h2 id="平方根-g2--f">平方根 $g^2 = f$<a hidden class="anchor" aria-hidden="true" href="#平方根-g2--f">#</a></h2>
+$$ </p>
+<p>而  $\mathcal{F}_{2m}(X) = (-1)^j$ ，无需计算。即在各块的 DFT 已经计算好的情况下，我们只需要一次 IDFT 就可以算出第  $k$  块。</p>
+<h2 id="平方根-g2--f">平方根  $g^2 = f$ </h2>
 <p>这个东西其实和半在线卷积很像，只不过 relax 最后归于一个点，而这里是一整块在迭代。</p>
-<p>类似于普通牛顿迭代，假设 $g_{[0]}, \cdots, g_{[k-1]}$ 已经给出，那么观察缺少 $g_{[k]}$ 所造成的影响</p>
-<p>$$
+<p>类似于普通牛顿迭代，假设  $g_{[0]}, \cdots, g_{[k-1]}$  已经给出，那么观察缺少  $g_{[k]}$  所造成的影响</p>
+<p> $$
 \begin{aligned}
-(g_{[0]}+ \cdots+ g_{[k-1]} X^{k-1})^2 &amp;= f_{[0]} + \cdots + \psi X^{k} + \cdots \\
-(g_{[0]}+ \cdots+ g_{[k]} X^{k})^2 &amp;= f_{[0]} + \cdots + f_{[k]} X^{k} + \cdots
+(g_{[0]}+ \cdots+ g_{[k-1]} X^{k-1})^2 &= f_{[0]} + \cdots + \psi X^{k} + \cdots \\
+(g_{[0]}+ \cdots+ g_{[k]} X^{k})^2 &= f_{[0]} + \cdots + f_{[k]} X^{k} + \cdots
 \end{aligned}
-$$</p>
+$$ </p>
 <p>即得</p>
-<p>$$
+<p> $$
 f_{[k]} - \psi = 2 g_{[0]} \ast g_{[k]} \bmod X
-$$</p>
+$$ </p>
 <p>具体的步骤是</p>
 <ol start="0">
-<li>给定 $g_{[0]}$，预计算 $h = (g_{[0]})^{-1}$，可以使用任何 6E 的算法。</li>
-<li>计算 $\mathcal{F}_{2m}(h)$，花费 2E。</li>
+<li>给定  $g_{[0]}$ ，预计算  $h = (g_{[0]})^{-1}$ ，可以使用任何 6E 的算法。</li>
+<li>计算  $\mathcal{F}_{2m}(h)$ ，花费 2E。</li>
 <li>
 <ol start="0">
-<li>假设要计算第 $k$ 块。</li>
-<li>计算 $\mathcal{F}_{2m}(g_{[k-1]})$，花费 2E。</li>
-<li>计算 $\psi$，用前述优化只需一次 IDFT，花费 2E。</li>
-<li>计算 $g_{[k]} \gets \frac{1}{2} h \ast (f_{[k]} - \psi) \bmod X$，花费 4E。</li>
+<li>假设要计算第  $k$  块。</li>
+<li>计算  $\mathcal{F}_{2m}(g_{[k-1]})$ ，花费 2E。</li>
+<li>计算  $\psi$ ，用前述优化只需一次 IDFT，花费 2E。</li>
+<li>计算  $g_{[k]} \gets \frac{1}{2} h \ast (f_{[k]} - \psi) \bmod X$ ，花费 4E。</li>
 </ol>
 </li>
 </ol>
-<p>总之，根据论文估计，若我们通过分成 $r \to \infty$ 块计算，大概开销是 8E。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Poly</span> <span class="n">Poly</span><span class="o">::</span><span class="n">sqrt</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span><span class="n">deg</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="p">{</span><span class="n">front</span><span class="p">().</span><span class="n">sqrt</span><span class="p">()};</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="kt">int</span> <span class="n">R</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span> <span class="n">iv2</span> <span class="o">=</span> <span class="n">qpow</span><span class="p">(</span><span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">m</span> <span class="o">=</span> <span class="n">get_lim</span><span class="p">((</span><span class="n">deg</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">R</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">Poly</span> <span class="n">x</span> <span class="o">=</span> <span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">sqrt</span><span class="p">(),</span> <span class="n">h</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">inv</span><span class="p">().</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">vector</span><span class="o">&lt;</span><span class="n">Poly</span><span class="o">&gt;</span> <span class="n">ng</span><span class="p">(</span><span class="n">R</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">x</span><span class="p">.</span><span class="n">deg</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">deg</span><span class="p">();</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">Poly</span> <span class="nf">psi</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="n">j</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                    <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                    <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                    <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">                <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                    <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">            <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="n">psi</span><span class="p">.</span><span class="n">intt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">).</span><span class="n">fillZeroH</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">min</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">deg</span><span class="p">()</span> <span class="o">-</span> <span class="n">m</span> <span class="o">*</span> <span class="n">k</span><span class="p">);</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">psi</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)[</span><span class="n">m</span> <span class="o">*</span> <span class="n">k</span> <span class="o">+</span> <span class="n">j</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">        <span class="n">mul</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">x</span><span class="p">.</span><span class="n">redeg</span><span class="p">((</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">x</span><span class="p">[</span><span class="n">m</span> <span class="o">*</span> <span class="n">k</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">iv2</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">deg</span><span class="p">());</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><p>实际测试发现，迭代写法常数对 $r$ 敏感，猜测是 inv 开销过大，算足 $r$ 次才有优势，递归在划分上比迭代更好。块数 $r$ 可以不是 $2$ 的幂。</p>
+<p>总之，根据论文估计，若我们通过分成  $r \to \infty$  块计算，大概开销是 8E。</p>
+<pre><code class="language-cpp">Poly Poly::sqrt() const {
+    if (deg() == 1) {
+        return {front().sqrt()};
+    }
+    const int R = 16, iv2 = qpow(2);
+    int m = get_lim((deg() - 1) / R + 1);
+    Poly x = cut(m).sqrt(), h = x.inv().ntt(m * 2);
+    vector&lt;Poly&gt; ng(R);
+
+    for (int k = 1; x.deg() &lt; deg(); k++) {
+        ng[k - 1] = x.cut(m, (k - 1) * m).ntt(m * 2);
+        Poly psi(m * 2);
+        for (int j = 0; j &lt; k; j++) {
+            if (j &gt;= 1) {
+                for (int i = 0; i &lt; m; i++)
+                    psi[i] -= ng[j][i] * (ng[k - j][i] + ng[k - 1 - j][i]);
+                for (int i = m; i &lt; m * 2; i++)
+                    psi[i] -= ng[j][i] * (ng[k - j][i] - ng[k - 1 - j][i]);
+            } else {
+                for (int i = 0; i &lt; m; i++)
+                    psi[i] -= ng[j][i] * ng[k - 1 - j][i];
+                for (int i = m; i &lt; m * 2; i++)
+                    psi[i] += ng[j][i] * ng[k - 1 - j][i];
+            }
+        }
+        psi.intt(m * 2).fillZeroH(m * 2);
+        for (int j = 0; j &lt; min(m, deg() - m * k); j++)
+            psi[j] += (*this)[m * k + j];
+        mul(psi, h, m * 2);
+        x.redeg((k + 1) * m);
+        for (int i = 0; i &lt; m; i++)
+            x[m * k + i] = psi[i] * iv2;
+    }
+    return x.cut(deg());
+}
+</code></pre>
+<p>实际测试发现，迭代写法常数对  $r$  敏感，猜测是 inv 开销过大，算足  $r$  次才有优势，递归在划分上比迭代更好。块数  $r$  可以不是  $2$  的幂。</p>
 <p>代码请看 <a href="https://www.luogu.com.cn/record/67226751">提交</a>。</p>
-<h2 id="倒数-f-ast-g--1">倒数 $f \ast g = 1$<a hidden class="anchor" aria-hidden="true" href="#倒数-f-ast-g--1">#</a></h2>
+<h2 id="倒数-f-ast-g--1">倒数  $f \ast g = 1$ </h2>
 <p>其分块形式是</p>
-<p>$$
+<p> $$
 0 - \psi = f_{[0]} \ast g_{[k]} \bmod X
-$$</p>
+$$ </p>
 <p>具体的步骤是</p>
 <ol start="0">
-<li>给定 $g_{[0]}$，而 $h = (f_{[0]})^{-1} = g_{[0]}$，不用计算。</li>
+<li>给定  $g_{[0]}$ ，而  $h = (f_{[0]})^{-1} = g_{[0]}$ ，不用计算。</li>
 <li>
 <ol start="0">
-<li>假设要计算第 $k$ 块。</li>
-<li>计算 $\mathcal{F}_{2m}(g_{[k-1]})$ 和 $\mathcal{F}_{2m}(f_{[k]})$，花费 4E。</li>
-<li>计算 $\psi$，花费 2E。</li>
-<li>计算 $g_{[k]} \gets -h \ast \psi \bmod X$，花费 4E。</li>
+<li>假设要计算第  $k$  块。</li>
+<li>计算  $\mathcal{F}_{2m}(g_{[k-1]})$  和  $\mathcal{F}_{2m}(f_{[k]})$ ，花费 4E。</li>
+<li>计算  $\psi$ ，花费 2E。</li>
+<li>计算  $g_{[k]} \gets -h \ast \psi \bmod X$ ，花费 4E。</li>
 </ol>
 </li>
 </ol>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Poly</span> <span class="n">Poly</span><span class="o">::</span><span class="n">inv</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="c1">// 10E
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">deg</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="p">{</span><span class="n">front</span><span class="p">().</span><span class="n">inv</span><span class="p">()};</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="kt">int</span> <span class="n">R</span> <span class="o">=</span> <span class="mi">16</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">m</span> <span class="o">=</span> <span class="n">get_lim</span><span class="p">((</span><span class="n">deg</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">R</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">Poly</span> <span class="n">x</span> <span class="o">=</span> <span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">inv</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">vector</span><span class="o">&lt;</span><span class="n">Poly</span><span class="o">&gt;</span> <span class="n">nf</span><span class="p">(</span><span class="n">R</span><span class="p">),</span> <span class="n">ng</span><span class="p">(</span><span class="n">R</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">nf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">x</span><span class="p">.</span><span class="n">deg</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">deg</span><span class="p">();</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">nf</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">k</span> <span class="o">*</span> <span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span> <span class="c1">// 2E
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span> <span class="c1">// 2E
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">Poly</span> <span class="nf">psi</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="n">psi</span><span class="p">.</span><span class="n">intt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">).</span><span class="n">fillZeroH</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span> <span class="c1">// 2E
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">mul</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">ng</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span> <span class="c1">// 4E
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="n">x</span><span class="p">.</span><span class="n">redeg</span><span class="p">((</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">x</span><span class="p">[</span><span class="n">m</span> <span class="o">*</span> <span class="n">k</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">deg</span><span class="p">());</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><p>当 $r \to \infty$ 时，开销大概是 10E。代码请看 <a href="https://www.luogu.com.cn/record/67337098">提交</a>。</p>
-<p>原论文中分成 $3s$ 块，前面一块方法相同，后面两块通过更优的复用做到了 $26/3 = 8.66 \mathsf{E}$。我还没有阅读，感兴趣的可以尝试。</p>
-<h2 id="商数-f-ast-g--d">商数 $f \ast g = d$<a hidden class="anchor" aria-hidden="true" href="#商数-f-ast-g--d">#</a></h2>
-<p>论文里没有这个，我觉得右边加个 $d$ 没啥影响，试了试的确可以。</p>
-<p>$$
+<pre><code class="language-cpp">Poly Poly::inv() const { // 10E
+    if (deg() == 1) {
+        return {front().inv()};
+    }
+    const int R = 16;
+    int m = get_lim((deg() - 1) / R + 1);
+    Poly x = cut(m).inv();
+    vector&lt;Poly&gt; nf(R), ng(R);
+    nf[0] = cut(m).ntt(m * 2);
+    for (int k = 1; x.deg() &lt; deg(); k++) {
+        nf[k] = cut(m, k * m).ntt(m * 2); // 2E
+        ng[k - 1] = x.cut(m, (k - 1) * m).ntt(m * 2); // 2E
+        Poly psi(m * 2);
+        for (int j = 0; j &lt; k; j++) {
+            for (int i = 0; i &lt; m; i++)
+                psi[i] -= ng[j][i] * (nf[k - j][i] + nf[k - 1 - j][i]);
+            for (int i = m; i &lt; m * 2; i++)
+                psi[i] -= ng[j][i] * (nf[k - j][i] - nf[k - 1 - j][i]);
+        }
+        psi.intt(m * 2).fillZeroH(m * 2); // 2E
+        mul(psi, ng[0], m * 2); // 4E
+        x.redeg((k + 1) * m);
+        for (int i = 0; i &lt; m; i++)
+            x[m * k + i] = psi[i];
+    }
+    return x.cut(deg());
+}
+</code></pre>
+<p>当  $r \to \infty$  时，开销大概是 10E。代码请看 <a href="https://www.luogu.com.cn/record/67337098">提交</a>。</p>
+<p>原论文中分成  $3s$  块，前面一块方法相同，后面两块通过更优的复用做到了  $26/3 = 8.66 \mathsf{E}$ 。我还没有阅读，感兴趣的可以尝试。</p>
+<h2 id="商数-f-ast-g--d">商数  $f \ast g = d$ </h2>
+<p>论文里没有这个，我觉得右边加个  $d$  没啥影响，试了试的确可以。</p>
+<p> $$
 d_{[k]} - \psi = f_{[0]} \ast g_{[k]} \bmod X
-$$</p>
-<p>因为 $d$ 不需要做 DFT，故与倒数的方法基本相同，这里不重复了。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Poly</span> <span class="n">Poly</span><span class="o">::</span><span class="n">div</span><span class="p">(</span><span class="n">Poly</span> <span class="n">f</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span> <span class="c1">// 10E
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">deg</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="p">{</span><span class="n">front</span><span class="p">()</span> <span class="o">*</span> <span class="n">f</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">inv</span><span class="p">()};</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="n">f</span><span class="p">.</span><span class="n">redeg</span><span class="p">(</span><span class="n">deg</span><span class="p">());</span>
-</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="kt">int</span> <span class="n">R</span> <span class="o">=</span> <span class="mi">16</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">m</span> <span class="o">=</span> <span class="n">get_lim</span><span class="p">((</span><span class="n">deg</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">R</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">Poly</span> <span class="n">x</span> <span class="o">=</span> <span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">div</span><span class="p">(</span><span class="n">f</span><span class="p">),</span> <span class="n">h</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">inv</span><span class="p">().</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">vector</span><span class="o">&lt;</span><span class="n">Poly</span><span class="o">&gt;</span> <span class="n">nf</span><span class="p">(</span><span class="n">R</span><span class="p">),</span> <span class="n">ng</span><span class="p">(</span><span class="n">R</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">nf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">x</span><span class="p">.</span><span class="n">deg</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">deg</span><span class="p">();</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">nf</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">f</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">k</span> <span class="o">*</span> <span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">Poly</span> <span class="nf">psi</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="n">psi</span><span class="p">.</span><span class="n">intt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">).</span><span class="n">fillZeroH</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">min</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">deg</span><span class="p">()</span> <span class="o">-</span> <span class="n">m</span> <span class="o">*</span> <span class="n">k</span><span class="p">);</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">psi</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">+=</span> <span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)[</span><span class="n">m</span> <span class="o">*</span> <span class="n">k</span> <span class="o">+</span> <span class="n">j</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">        <span class="n">mul</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">x</span><span class="p">.</span><span class="n">redeg</span><span class="p">((</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">x</span><span class="p">[</span><span class="n">m</span> <span class="o">*</span> <span class="n">k</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">deg</span><span class="p">());</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><p>当 $r \to \infty$ 时，开销大概是 10E。代码请看 <a href="https://www.luogu.com.cn/record/67227138">提交</a>。</p>
-<h2 id="指数-g--ef">指数 $g = e^f$<a hidden class="anchor" aria-hidden="true" href="#指数-g--ef">#</a></h2>
-<p>指数与前者不同，其微分方程 $\Delta g = \Delta f \ast g$ 左右都有 $g$，不能直接算。</p>
+$$ </p>
+<p>因为  $d$  不需要做 DFT，故与倒数的方法基本相同，这里不重复了。</p>
+<pre><code class="language-cpp">Poly Poly::div(Poly f) const { // 10E
+    if (deg() == 1) {
+        return {front() * f[0].inv()};
+    }
+    f.redeg(deg());
+    const int R = 16;
+    int m = get_lim((deg() - 1) / R + 1);
+    Poly x = cut(m).div(f), h = f.cut(m).inv().ntt(m * 2);
+
+    vector&lt;Poly&gt; nf(R), ng(R);
+
+    nf[0] = f.cut(m).ntt(m * 2);
+    for (int k = 1; x.deg() &lt; deg(); k++) {
+        nf[k] = f.cut(m, k * m).ntt(m * 2);
+        ng[k - 1] = x.cut(m, (k - 1) * m).ntt(m * 2);
+        Poly psi(m * 2);
+        for (int j = 0; j &lt; k; j++) {
+            for (int i = 0; i &lt; m; i++)
+                psi[i] -= ng[j][i] * (nf[k - j][i] + nf[k - 1 - j][i]);
+            for (int i = m; i &lt; m * 2; i++)
+                psi[i] -= ng[j][i] * (nf[k - j][i] - nf[k - 1 - j][i]);
+        }
+        psi.intt(m * 2).fillZeroH(m * 2);
+        for (int j = 0; j &lt; min(m, deg() - m * k); j++)
+            psi[j] += (*this)[m * k + j];
+        mul(psi, h, m * 2);
+        x.redeg((k + 1) * m);
+        for (int i = 0; i &lt; m; i++)
+            x[m * k + i] = psi[i];
+    }
+    return x.cut(deg());
+}
+</code></pre>
+<p>当  $r \to \infty$  时，开销大概是 10E。代码请看 <a href="https://www.luogu.com.cn/record/67227138">提交</a>。</p>
+<h2 id="指数-g--ef">指数  $g = e^f$ </h2>
+<p>指数与前者不同，其微分方程  $\Delta g = \Delta f \ast g$  左右都有  $g$ ，不能直接算。</p>
 <p>类似的，写作分块形式</p>
-<p>$$
+<p> $$
 (\Delta g)_{[k]} - \psi = g_{[k]} \ast (\Delta f)_{[0]} \bmod X
-$$</p>
-<p>为了方便起见，我们记 $\Delta_{k}f = X^{-k} \Delta(X^k f)$，有</p>
-<p>$$
+$$ </p>
+<p>为了方便起见，我们记  $\Delta_{k}f = X^{-k} \Delta(X^k f)$ ，有</p>
+<p> $$
 \Delta (f_{[0]} + f_{[1]} X + \cdots) = (\Delta_0 f_{[0]}) + (\Delta_1 f_{[1]}) + \cdots
-$$</p>
-<p>令 $u = (g_{[0]})^{-1}$，注意到</p>
-<p>$$
+$$ </p>
+<p>令  $u = (g_{[0]})^{-1}$ ，注意到</p>
+<p> $$
 \Delta u = \Delta \exp (-f_{[0]}) = -u \ast \Delta f_{[0]}
-$$</p>
+$$ </p>
 <p>因此</p>
-<p>$$
+<p> $$
 \begin{aligned}
-\phi = u \ast \psi &amp;= u \ast (\Delta g)_{[k]} - u \ast g_{[k]} \ast (\Delta_f)_{[0]}\\
-&amp;= u \ast (\Delta g)_{[k]} + g_{[k]} \ast (\Delta u) \\
-&amp;= \Delta_{k}(g_{[k]} \ast u \bmod X)
+\phi = u \ast \psi &= u \ast (\Delta g)_{[k]} - u \ast g_{[k]} \ast (\Delta_f)_{[0]}\\
+&= u \ast (\Delta g)_{[k]} + g_{[k]} \ast (\Delta u) \\
+&= \Delta_{k}(g_{[k]} \ast u \bmod X)
 \end{aligned}
-$$</p>
-<p>如此就可以更快的取出 $g_{[k]}$ 了。</p>
+$$ </p>
+<p>如此就可以更快的取出  $g_{[k]}$  了。</p>
 <p>具体的计算过程：</p>
 <ol start="0">
-<li>给定 $g_{[0]}$。</li>
-<li>计算 $u = (g_{[0]}) ^ {-1}$ 和 $\mathcal{F}_{2m}(u)$，花费 6E + 2E</li>
-<li>计算 $\mathcal{F}_{2m}((\Delta f)_{[0]})$，花费 2E。</li>
+<li>给定  $g_{[0]}$ 。</li>
+<li>计算  $u = (g_{[0]}) ^ {-1}$  和  $\mathcal{F}_{2m}(u)$ ，花费 6E + 2E</li>
+<li>计算  $\mathcal{F}_{2m}((\Delta f)_{[0]})$ ，花费 2E。</li>
 <li>
 <ol start="0">
-<li>假设要计算第 $k$ 块</li>
-<li>计算 $\mathcal{F}_{2m}((\Delta f)_{[k]})$ 和 $\mathcal{F}_{2m} (g_{[k-1]})$，花费 2E + 2E。</li>
-<li>计算 $\psi$，花费 2E。</li>
-<li>计算 $\phi \gets u \ast \psi$，花费 4E。</li>
-<li>计算 $g_{[k]} \gets g_{[0]} \ast (\Delta_{k}^{-1} \phi)$，花费 4E。</li>
+<li>假设要计算第  $k$  块</li>
+<li>计算  $\mathcal{F}_{2m}((\Delta f)_{[k]})$  和  $\mathcal{F}_{2m} (g_{[k-1]})$ ，花费 2E + 2E。</li>
+<li>计算  $\psi$ ，花费 2E。</li>
+<li>计算  $\phi \gets u \ast \psi$ ，花费 4E。</li>
+<li>计算  $g_{[k]} \gets g_{[0]} \ast (\Delta_{k}^{-1} \phi)$ ，花费 4E。</li>
 </ol>
 </li>
 </ol>
-<p>当 $r \to \infty$ 时，开销大概是 14E。代码请看 <a href="https://www.luogu.com.cn/record/67322636">提交</a>。</p>
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-cpp" data-lang="cpp"><span class="line"><span class="cl"><span class="n">Poly</span> <span class="n">Poly</span><span class="o">::</span><span class="n">exp</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="c1">// 14E
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">if</span> <span class="p">(</span><span class="n">deg</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="p">{</span><span class="mi">1</span><span class="p">};</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">const</span> <span class="kt">int</span> <span class="n">S</span> <span class="o">=</span> <span class="mi">16</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">m</span> <span class="o">=</span> <span class="n">get_lim</span><span class="p">((</span><span class="n">deg</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">S</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">Poly</span> <span class="n">x</span> <span class="o">=</span> <span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">exp</span><span class="p">(),</span> <span class="n">u</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">inv</span><span class="p">();</span>
-</span></span><span class="line"><span class="cl">    <span class="n">vector</span><span class="o">&lt;</span><span class="n">Poly</span><span class="o">&gt;</span> <span class="n">nf</span><span class="p">(</span><span class="n">S</span><span class="p">),</span> <span class="n">ng</span><span class="p">(</span><span class="n">S</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="n">Poly</span> <span class="n">df</span> <span class="o">=</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">df</span><span class="p">.</span><span class="n">deg</span><span class="p">();</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">        <span class="n">df</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="n">i</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">u</span><span class="p">.</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">    <span class="n">nf</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">k</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">x</span><span class="p">.</span><span class="n">deg</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">deg</span><span class="p">();</span> <span class="n">k</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">        <span class="n">nf</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">k</span> <span class="o">*</span> <span class="n">m</span><span class="p">).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">ng</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)).</span><span class="n">ntt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">Poly</span> <span class="nf">psi</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">;</span> <span class="n">j</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">            <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">                <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">ng</span><span class="p">[</span><span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">nf</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">j</span><span class="p">][</span><span class="n">i</span><span class="p">]);</span>
-</span></span><span class="line"><span class="cl">        <span class="p">}</span>
-</span></span><span class="line"><span class="cl">        <span class="n">psi</span><span class="p">.</span><span class="n">intt</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">).</span><span class="n">fillZeroH</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">        <span class="n">mul</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">).</span><span class="n">fillZeroH</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">pre_inv</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="p">(</span><span class="n">k</span> <span class="o">+</span> <span class="mi">2</span><span class="p">));</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*=</span> <span class="n">Inv</span><span class="p">[</span><span class="n">m</span> <span class="o">*</span> <span class="n">k</span> <span class="o">+</span> <span class="n">i</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">        <span class="n">mul</span><span class="p">(</span><span class="n">psi</span><span class="p">,</span> <span class="n">ng</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">).</span><span class="n">fillZeroH</span><span class="p">(</span><span class="n">m</span> <span class="o">*</span> <span class="mi">2</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="n">x</span><span class="p">.</span><span class="n">redeg</span><span class="p">((</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">m</span><span class="p">);</span>
-</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">m</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-</span></span><span class="line"><span class="cl">            <span class="n">x</span><span class="p">[</span><span class="n">m</span> <span class="o">*</span> <span class="n">k</span> <span class="o">+</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">psi</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
-</span></span><span class="line"><span class="cl">    <span class="p">}</span>
-</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">x</span><span class="p">.</span><span class="n">cut</span><span class="p">(</span><span class="n">deg</span><span class="p">());</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span></code></pre></div><p>原论文中分成 $2s$ 块，做到了 13E。我还没有阅读，感兴趣的可以尝试。</p>
-<h2 id="refence">Refence<a hidden class="anchor" aria-hidden="true" href="#refence">#</a></h2>
+<p>当  $r \to \infty$  时，开销大概是 14E。代码请看 <a href="https://www.luogu.com.cn/record/67322636">提交</a>。</p>
+<pre><code class="language-cpp">Poly Poly::exp() const { // 14E
+    if (deg() == 1) {
+        return {1};
+    }
+    const int S = 16;
+    int m = get_lim((deg() - 1) / S + 1);
+    Poly x = cut(m).exp(), u = x.inv();
+    vector&lt;Poly&gt; nf(S), ng(S);
+
+    Poly df = *this;
+    for (int i = 0; i &lt; df.deg(); i++)
+        df[i] *= i;
+    u.ntt(m * 2);
+    nf[0] = df.cut(m).ntt(m * 2);
+
+    for (int k = 1; x.deg() &lt; deg(); k++) {
+        nf[k] = df.cut(m, k * m).ntt(m * 2);
+        ng[k - 1] = x.cut(m, m * (k - 1)).ntt(m * 2);
+        Poly psi(m * 2);
+        for (int j = 0; j &lt; k; j++) {
+            for (int i = 0; i &lt; m; i++)
+                psi[i] += ng[j][i] * (nf[k - j][i] + nf[k - 1 - j][i]);
+            for (int i = m; i &lt; m * 2; i++)
+                psi[i] += ng[j][i] * (nf[k - j][i] - nf[k - 1 - j][i]);
+        }
+        psi.intt(m * 2).fillZeroH(m * 2);
+
+        mul(psi, u, m * 2).fillZeroH(m * 2);
+        pre_inv(m * (k + 2));
+        for (int i = 0; i &lt; m * 2; i++)
+            psi[i] *= Inv[m * k + i];
+        mul(psi, ng[0], m * 2).fillZeroH(m * 2);
+        x.redeg((k + 1) * m);
+        for (int i = 0; i &lt; m; i++)
+            x[m * k + i] = psi[i];
+    }
+    return x.cut(deg());
+}
+</code></pre>
+<p>原论文中分成  $2s$  块，做到了 13E。我还没有阅读，感兴趣的可以尝试。</p>
+<h2 id="refence">Refence</h2>
 <p><a href="https://arxiv.org/abs/0910.1926">https://arxiv.org/abs/0910.1926</a></p>
 <p><a href="https://arxiv.org/abs/0911.3110">https://arxiv.org/abs/0911.3110</a></p>
 <p><a href="https://negiizhao.blog.uoj.ac/blog/4671">https://negiizhao.blog.uoj.ac/blog/4671</a></p>
 <p><a href="https://hly1204.github.io/library/math/formal_power_series/formal_power_series.hpp">https://hly1204.github.io/library/math/formal_power_series/formal_power_series.hpp</a></p>
 
+    </section>
+    <hr />
+    <section class="comment-frame my-10">
+      
+
+
+  <div class="giscus"></div>
+<script>
+let giscusTheme = localStorage.getItem("giscus-theme");
+let giscusAttributes = () => {
+  return {
+    "src": "https://giscus.app/client.js",
+    "data-repo": "rogeryoungh\/blog",
+    "data-repo-id": "MDEwOlJlcG9zaXRvcnkzODQyNDIyNTQ=",
+    "data-category": "Giscus",
+    "data-category-id": "DIC_kwDOFucSTs4CTTLS",
+    "data-mapping": "pathname",
+    "data-strict": "0",
+    "data-reactions-enabled": "1",
+    "data-emit-metadata": "0",
+    "data-input-position": "bottom",
+    "data-theme": isCurrentDark() ? 'dark' : 'light',
+    "data-lang": "zh-CN",
+    "crossorigin": "anonymous",
+    "async": "",
+  }
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+  let giscusScript = document.createElement("script");
+  Object.entries(giscusAttributes()).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+  document.body.appendChild(giscusScript);
+});
+
+
+function changeGiscusTheme(theme) {
+  const sendMessage = (message) => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+    iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+  }
+  sendMessage({
+    setConfig: {
+      theme: theme
+    }
+  });
+}
+</script>
+
+
+
+    </section>
+  </article>
+</main>
+
+
+<footer class="my-10 color-secondary text-3 flex items-end justify-center a-underline">
+  <span>
+    © 2021 <a href="https://acm.rogery.dev">Roger Young</a>
+  </span>
+  <i class="i-carbon-lighting inline-block px-1"></i>
+  <span>Powered by <a href="https://gohugo.io/">Hugo</a> &
+    <a href="https://github.com/rogeryoungh/hugo-pure">pure</a>
+  </span>
+</footer>
+</div>
+  <div>
+    
+  <link
+  crossorigin="anonymous"
+  integrity="sha512-mQwom8Ns4op+H29oDkD/LXO/OsXPvCFfkgZkFAVrhhePzRLU8NUI3Nkm43NhWUSmj3p5Cca2HTEkMQmXQRwDQQ=="
+  href="https://lib.baomitu.com/KaTeX/0.16.4/katex.min.css" rel="stylesheet">
+<script
+  crossorigin="anonymous"
+  integrity="sha512-sHSNLECRJSK+BFs7E8DiFc6pf6n90bLI85Emiw1jhreduZhK3VXgq9l4kAt9eTIHYAcuQBKHL01QKs4/3Xgl8g=="
+  src="https://lib.baomitu.com/KaTeX/0.16.4/katex.min.js"></script>
+<script
+  crossorigin="anonymous"
+  integrity="sha512-iWiuBS5nt6r60fCz26Nd0Zqe0nbk1ZTIQbl3Kv7kYsX+yKMUFHzjaH2+AnM6vp2Xs+gNmaBAVWJjSmuPw76Efg=="
+  src="https://lib.baomitu.com/KaTeX/0.16.4/contrib/auto-render.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderMathInElement(document.body, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false },
+      { left: '\\(', right: '\\)', display: false },
+      { left: '\\[', right: '\\]', display: true },
+    ],
+    globalGroup: true,
+    throwOnError: false
+  });
+});
+</script>
+
+
+
+
+  <script
+  crossorigin="anonymous"
+  src="https://lib.baomitu.com/prism/1.29.0/prism.min.js"></script>
+<script
+  crossorigin="anonymous"
+  src="https://lib.baomitu.com/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+
+
+<script>
+let themeSwitch = document.getElementById("theme-switcher");
+var icon = themeSwitch.children[0];
+let currentPref = localStorage.getItem('pref-theme') || 'auto';
+let html = document.documentElement;
+let windowPref = window.matchMedia('(prefers-color-scheme: dark)');
+function isCurrentDark() {
+  let isDark = false;
+  if (currentPref === 'light') {
+    isDark = false;
+  } else if (currentPref === 'dark') {
+    isDark = true;
+  } else {
+    isDark = windowPref.matches;
+  }
+  return isDark;
+}
+let reloadTheme = () => {
+  icon.classList.remove('i-carbon-moon');
+  icon.classList.remove('i-carbon-sun');
+  icon.classList.remove('i-carbon-automatic');
+  if (currentPref === 'light') {
+    icon.classList.add('i-carbon-sun');
+  } else if (currentPref === 'dark') {
+    icon.classList.add('i-carbon-moon');
+  } else {
+    icon.classList.add('i-carbon-automatic');
+  }
+  if (isCurrentDark()) {
+    html.classList.add('dark');
+  } else {
+    html.classList.remove('dark');
+  }
+  
+    changeGiscusTheme(isCurrentDark() ? 'dark' : 'light');
+  
+};
+themeSwitch.addEventListener("click", () => {
+  icon.classList.remove('i-carbon-moon');
+  icon.classList.remove('i-carbon-sun');
+  icon.classList.remove('i-carbon-automatic');
+  if (currentPref === 'auto') {
+    currentPref = 'dark';
+    icon.classList.add('i-carbon-moon');
+  } else if (currentPref === 'dark') {
+    currentPref = 'light';
+    icon.classList.add('i-carbon-sun');
+  } else {
+    currentPref = 'auto';
+    icon.classList.add('i-carbon-automatic');
+  }
+  localStorage.setItem("pref-theme", currentPref);
+  reloadTheme();
+});
+reloadTheme();
+</script>
+
 
   </div>
-  <footer class="post-footer">
-<nav class="paginav">
-  <a class="next" href="https://blog.rogery.dev/post/learn-fft/">
-    <span class="title">Next Page »</span>
-    <br>
-    <span>FFT &amp; NTT 学习笔记</span>
-  </a>
-</nav>
-<blockquote>
-    <p class="copyright-item">
-        本文作者： rogeryoungh。
-        许可协议：<a href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" target="_blank">CC BY-SA 4.0</a>。
-        转载请署名！
-    </p>
-    <p class="copyright-item">
-        撰写时间：2022-01-19，
-        <a href="https://github.com/rogeryoungh/blog/commits/main/content/post/poly-newton.md" target="_blank">更新历史</a>。
-    </p>
-</blockquote>
-  </footer><div id="vcomments"></div>
-<script src='//cdn.jsdelivr.net/npm/valine@1/dist/Valine.min.js'></script>
-<script type="text/javascript">
-    new Valine({
-        el: '#vcomments',
-        appId: 'FIvl3vmw2mH3naQEJhErblHr-gzGzoHsz',
-        appKey: 'BhvzpBrJqPPzfK5phjDBiBb4',
-        avatar: 'mp',
-        placeholder: '说点什么吧...',
-        visitor: 'false'
-    });
-</script>
-</article>
-    </main>
-    <footer class="footer">
-    <span>© 2022 <a href="https://blog.rogery.dev/">Roger Young</a></span>
-    <span>
-        Powered by
-        <a href="https://gohugo.io/" rel="noopener noreferrer" target="_blank">Hugo</a> &
-        <a href="https://git.io/hugopapermod" rel="noopener" target="_blank">PaperMod</a>
-    </span>
-</footer>
-<a href="#top" id="gototop" aria-label="go to top" title="Go to Top (Alt + G)">
-    <button class="top-link" id="top-link" type="button" accesskey="g">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 6" fill="currentColor">
-            <path d="M12 6H0l6-6z" />
-        </svg>
-    </button>
-</a>
-
-<script>
-    let menu = document.getElementById('menu')
-    menu.scrollLeft = localStorage.getItem("menu-scroll-position");
-    menu.onscroll = function () {
-        localStorage.setItem("menu-scroll-position", menu.scrollLeft);
-    }
-
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener("click", function (e) {
-            e.preventDefault();
-            var id = this.getAttribute("href").substr(1);
-            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
-                    behavior: "smooth"
-                });
-            } else {
-                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
-            }
-            if (id === "top") {
-                history.replaceState(null, null, " ");
-            } else {
-                history.pushState(null, null, `#${id}`);
-            }
-        });
-    });
-
-</script>
-<script>
-    var mybutton = document.getElementById("top-link");
-    window.onscroll = function () {
-        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
-            mybutton.style.visibility = "visible";
-            mybutton.style.opacity = "1";
-        } else {
-            mybutton.style.visibility = "hidden";
-            mybutton.style.opacity = "0";
-        }
-    };
-
-</script>
-<script>
-    document.getElementById("theme-toggle").addEventListener("click", () => {
-        if (document.body.className.includes("dark")) {
-            document.body.classList.remove('dark');
-            localStorage.setItem("pref-theme", 'light');
-        } else {
-            document.body.classList.add('dark');
-            localStorage.setItem("pref-theme", 'dark');
-        }
-    })
-    document.getElementById("font-toggle").addEventListener("click", () => {
-        if (document.body.className.includes("serif")) {
-            document.body.classList.remove('serif');
-            localStorage.setItem("pref-font", 'sans');
-        } else {
-            document.body.classList.add('serif');
-            localStorage.setItem("pref-font", 'serif');
-        }
-    })
-
-</script>
-<script>
-    document.querySelectorAll('pre > code').forEach((codeblock) => {
-        const container = codeblock.parentNode.parentNode;
-
-        const copybutton = document.createElement('button');
-        copybutton.classList.add('copy-code');
-        copybutton.innerText = 'copy';
-
-        function copyingDone() {
-            copybutton.innerText = 'copied!';
-            setTimeout(() => {
-                copybutton.innerText = 'copy';
-            }, 2000);
-        }
-
-        copybutton.addEventListener('click', (cb) => {
-            if ('clipboard' in navigator) {
-                navigator.clipboard.writeText(codeblock.textContent);
-                copyingDone();
-                return;
-            }
-
-            const range = document.createRange();
-            range.selectNodeContents(codeblock);
-            const selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                document.execCommand('copy');
-                copyingDone();
-            } catch (e) { };
-            selection.removeRange(range);
-        });
-
-        if (container.classList.contains("highlight")) {
-            container.appendChild(copybutton);
-        } else if (container.parentNode.firstChild == container) {
-            
-        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
-            
-            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
-        } else {
-            
-            codeblock.parentNode.appendChild(copybutton);
-        }
-    });
-</script></body>
+</body>
 
 </html>

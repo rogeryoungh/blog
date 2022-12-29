@@ -1,46 +1,62 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes"?>
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Roger Young</title>
-    <link>https://blog.rogery.dev/</link>
-    <description>Recent content on Roger Young</description>
+    <title>About on Roger Young</title>
+    <link>https://acm.rogery.dev/</link>
+    <description>Recent content in About on Roger Young</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
-    <copyright>© 2022 [Roger Young](https://blog.rogery.dev/)</copyright>
-    <lastBuildDate>Wed, 19 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://blog.rogery.dev/index.xml" rel="self" type="application/rss+xml" />
+    <copyright>© 2021 [Roger Young](https://acm.rogery.dev)</copyright>
+    <lastBuildDate>Tue, 02 Feb 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://acm.rogery.dev/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>多项式牛顿迭代的分块优化</title>
-      <link>https://blog.rogery.dev/post/poly-newton/</link>
+      <link>https://acm.rogery.dev/post/poly-newton/</link>
       <pubDate>Wed, 19 Jan 2022 00:00:00 +0000</pubDate>
       
-      <guid>https://blog.rogery.dev/post/poly-newton/</guid>
-      <description>STL 好厉害。</description>
+      <guid>https://acm.rogery.dev/post/poly-newton/</guid>
+      <description>草稿。。。
+半在线卷积可以多叉，牛顿迭代怎么就不能多叉呢。
+在本文我们利用分块得到了 sqrt(8E)，inv(10E)，div(10E)，exp(14E)，相比以前有了一定的常数提升。
+本文可以看作 Faster algorithms for the square root and reciprocal of power series 和 Faster exponentials of power series 的翻译。原论文还有 inv(8.66E) 和 exp(13E) 的算法，但是过于复杂了，我没有尝试。
+初次写文，好多地方不规范，欢迎指教。
+分块原理 对于两个长为 $mr$ 多项式 $f, g$ ，我们把 $f$ 分成 $r$ 块，分别记做
+$$ f_{[0]}, f_{[1]}, \cdots, f_{[r-1]} $$ 对于 $g$ 类似，为了简化描述，我们记 $X = x^m$ 。
+其乘积有一些额外的项，拿 $r=2$ 举例
+$$ fg = f_{[0]} \ast g_{[0]} + (f_{[0]} \ast g_{[1]} + f_{[1]} \ast g_{[0]}) X + f_{[1]} \ast g_{[1]} X^2 $$ 注意</description>
     </item>
     
     <item>
       <title>FFT &amp; NTT 学习笔记</title>
-      <link>https://blog.rogery.dev/post/learn-fft/</link>
+      <link>https://acm.rogery.dev/post/learn-fft/</link>
       <pubDate>Thu, 22 Jul 2021 00:00:00 +0000</pubDate>
       
-      <guid>https://blog.rogery.dev/post/learn-fft/</guid>
-      <description>FFT 怎么这么难啊。</description>
+      <guid>https://acm.rogery.dev/post/learn-fft/</guid>
+      <description>以下是我对 FFT 的感性理解，可能并不严谨，如有错误欢迎指正。
+FFT 以下讲述的算法是 Cooley–Tukey FFT，它在算法竞赛中使用的更为广泛。
+前置知识：复数，需要理解 Euler 公式。
+多项式乘法 对于 $n$ 次多项式
+$$ \begin{aligned} f(x) = \sum_{i=0}^n f_ix^i &amp;= f_0 + f_1 x + f_2x^2 + \cdots + g_nx^n \\ g(x) = \sum_{i=0}^n g_ix^i &amp;= g_0 + g_1 x + g_2x^2 + \cdots + g_nx^n \end{aligned} $$ 它们的卷积是 $F(x) = f(x) \ast g(x) = (f \ast g)(x) = \sum\limits_{k=0}^{2n} c_kx^k$ ，其中
+$$ c_k = \sum_{i+j=k}f_ig_j $$ 因此朴素的计算多项式的卷积需要 $n^2$ 次系数乘法，我们需要优化。</description>
     </item>
     
     <item>
       <title>迁移博客到 Hugo</title>
-      <link>https://blog.rogery.dev/post/hello-world-hugo/</link>
+      <link>https://acm.rogery.dev/post/hello-world-hugo/</link>
       <pubDate>Wed, 09 Jun 2021 00:00:00 +0000</pubDate>
       
-      <guid>https://blog.rogery.dev/post/hello-world-hugo/</guid>
-      <description>迁移博客到 Hugo。</description>
+      <guid>https://acm.rogery.dev/post/hello-world-hugo/</guid>
+      <description>啥也没写，先发两篇 Hello World（
+迁移时遇到了一点问题，在这里记录下。
+修公式 Markdown 和 TeX 对下划线的解释不一样，还有很多其他的转义问题，导致 KaTeX 不能在浏览器中正常渲染。
+解决办法是我写了一个小脚本，它能够提前对字符串进行转义，这样 hugo 吐出来的恰是原内容，就可以正常渲染了。</description>
     </item>
     
     <item>
       <title>About</title>
-      <link>https://blog.rogery.dev/about/</link>
+      <link>https://acm.rogery.dev/about/</link>
       <pubDate>Tue, 02 Feb 2021 00:00:00 +0000</pubDate>
       
-      <guid>https://blog.rogery.dev/about/</guid>
+      <guid>https://acm.rogery.dev/about/</guid>
       <description>ZAFU 2020 级计算机，在学编程。常用 ID : rogeryoungh。
 喜欢数学和编程，很想认识些有同样兴趣的朋友，欢迎交换友链！
 联系方式 GitHub：rogeryoungh
@@ -50,14 +66,23 @@ Telegram: rogeryoungh
     
     <item>
       <title>Hexo 搭建记录</title>
-      <link>https://blog.rogery.dev/post/hello-world-hexo/</link>
+      <link>https://acm.rogery.dev/post/hello-world-hexo/</link>
       <pubDate>Tue, 02 Feb 2021 00:00:00 +0000</pubDate>
       
-      <guid>https://blog.rogery.dev/post/hello-world-hexo/</guid>
-      <description>已转 Hugo。</description>
+      <guid>https://acm.rogery.dev/post/hello-world-hexo/</guid>
+      <description>已转 Hugo。
+折腾了一整天，终于把 Hexo 给搭到 GitHub Page 上，我还是太菜了。
+又折腾了一天，使用了新的方式重新部署了博客，那也重写一下 Hello World 吧。
+Hexo 本地搭建 装 git 和 npm、换淘宝源。装好之后安装 hexo-cli。
+$ npm install -g hexo-cli 用 hexo 新建目录 blog，进入目录。初始化环境
+$ hexo init blog $ cd blog $ npm install 这时，source/_posts/ 下可以看到 hello-world.md 文档，可以修改试试。
+查看一下成果。
+$ hexo serve 主题配置 最终选定了 Keep，简洁大方，深得我心。
+Keep 的作者给了一个 Demo，就是他自己的博客。还有两篇文档，Keep 主题使用指南 和 Keep 主题配置指南 。这两个文档讲的非常详细，跟着做很容易就配好了。
+然后可以根据文档加入想要的插件，比如我加了 search 和 mathjax 等。
+我决定通过 submodule 的方式使用主题，这样魔改样式时不会污染文章的时间线。
+先 Fork 主题，然后在 blog 项目中引用。</description>
     </item>
-    
-    
     
   </channel>
 </rss>
