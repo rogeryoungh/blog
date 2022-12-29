@@ -3,7 +3,6 @@ author: "rogeryoungh"
 title: "FFT & NTT 学习笔记"
 date: "2021-07-22"
 description: "FFT 怎么这么难啊。"
-katex: true
 tags: [多项式]
 ---
 

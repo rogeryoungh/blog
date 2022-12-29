@@ -3,7 +3,6 @@ author: "rogeryoungh"
 title: "迁移博客到 Hugo"
 date: "2021-06-09"
 description: "迁移博客到 Hugo。"
-katex: true
 ---
 
 ~~啥也没写，先发两篇 Hello World（~~

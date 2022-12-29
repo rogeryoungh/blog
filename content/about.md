@@ -2,8 +2,8 @@
 author: "rogeryoungh"
 title: "About"
 date: "2021-02-02"
-ShowToc: false
-ShowCopyRight: false
+toc:
+  enable: false
 --- 
 
 ZAFU 2020 级计算机，在学编程。常用 ID : `rogeryoungh`。

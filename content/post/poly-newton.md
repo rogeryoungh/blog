@@ -3,8 +3,6 @@ author: "rogeryoungh"
 title: "多项式牛顿迭代的分块优化"
 date: "2022-01-19"
 description: "STL 好厉害。"
-katex: true
-showtoc: true
 ---
 
 草稿。。。
