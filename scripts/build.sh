@@ -1,9 +1,10 @@
 #!/bin/bash
 
-# 预处理 Markdown 文件
-wget https://github.com/rogeryoungh/preprocessor-md-tex/releases/latest/download/preprocessor-md-tex
-chmod +x preprocessor-md-tex
-./preprocessor-md-tex ./content
+mkdir -p $HOME/bin
+
+curl -sSL https://github.com/rogeryoungh/hugo-patch/releases/download/latest/hugo-extended-linux-amd64.tar.gz | tar -xz --directory=$HOME/bin
+
+export PATH="$HOME/bin:$PATH"
 
 # Hugo
 hugo
