@@ -7,7 +7,20 @@
     <generator>Hugo -- gohugo.io</generator>
     <language>zh</language>
     <copyright>© 2021 [Roger Young](https://acm.rogery.dev)</copyright>
-    <lastBuildDate>Wed, 19 Jan 2022 00:00:00 +0000</lastBuildDate><atom:link href="https://acm.rogery.dev/post/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Tue, 07 Feb 2023 00:00:00 +0000</lastBuildDate><atom:link href="https://acm.rogery.dev/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>优化取模的几种方法</title>
+      <link>https://acm.rogery.dev/post/learn-fastmod/</link>
+      <pubDate>Tue, 07 Feb 2023 00:00:00 +0000</pubDate>
+      
+      <guid>https://acm.rogery.dev/post/learn-fastmod/</guid>
+      <description>取模是很慢的，尤其是当模数是动态的数时。
+我没学过误差分析，大概讲法很民科（
+浮点实现 显然有等式
+$$ a \bmod m = a - \left\lfloor \frac{a}{m} \right\rfloor m $$ 一般情况下是 $m$ 是 i32 范围，且 $a \in [0, m^2)$ ，最简单的实现方式就是浮点除法。
+struct ModF { u32 m; f64 ivm; ModF(i32 m_) : m(m_), ivm(1.0 / m) {} u32 calc(u64 a) const { u32 r = a - i64(a * ivm) * m; if (r &amp;gt;= m) r -= m; if (r &amp;lt; 0) r += m; return r; } }; Barrett Reduction 考虑除法的一个替代，选取 $q, s$ 使得等式</description>
+    </item>
+    
     <item>
       <title>多项式牛顿迭代的分块优化</title>
       <link>https://acm.rogery.dev/post/poly-newton/</link>

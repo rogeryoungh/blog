@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html><head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta name="generator" content="Hugo 0.110.0-DEV">
+
+  
+  
+  <link rel="stylesheet" href="/scss/index.min.95ba81376e079da48068412714d3b5b407c6cec0c5edbf6ebc255278b7938d7c.css">
+
+</head>
+<body>
+  <div id="app"><header class="py-5 text-4 flex justify-center shadow print:hidden color-primary">
+  <nav class="mx-20 w-full max-w-240 flex flex-wrap justify-center items-center whitespace-nowrap sm:flex-nowrap sm:justify-between">
+    <div class="flex basis-full items-stretch justify-center sm:basis-auto">
+      <img class="w-12 h-12 self-center" src="https://rogery.dev/img/logo.png">
+      <a class="pl-5 font-bold flex self-center text-5" href="/"> Roger Young </a>
+    </div>
+    <ul class="pl-0 flex mt-5 self-center sm:mt-0">
+      <button class="m-3 self-center" id="theme-switcher">
+        <i class="i-carbon-automatic text-4">Sun</i>
+      </button>
+      <li class="flex"><a class="m-3" href="/post">Posts</a></li>
+      <li class="flex"><a class="m-3" href="/tag">Tag</a></li>
+      <li class="flex"><a class="m-3" href="/about">About</a></li>
+    </ul>
+  </nav>
+</header>
+
+
+<main class="px-5 flex justify-center">
+  <article class="article w-full max-w-210 my-10">
+    <header class="my-20">
+      <h1 class="text-8 text-center folt-bold"> 优化取模的几种方法 </h1>
+      <a
+        class="text-center-my-6 hidden print:block"
+        href="https://rogery.dev/">
+        rogeryoungh
+      </a>
+      <div class="text-center"> 2023 年 2 月 7 日 </div>
+    </header>
+    
+      <h1> 目录 </h1><nav id="TableOfContents">
+  <ol>
+    <li><a href="#浮点实现">浮点实现</a></li>
+    <li><a href="#barrett-reduction">Barrett Reduction</a>
+      <ol>
+        <li><a href="#乘定值">乘定值</a></li>
+        <li><a href="#调整">调整</a></li>
+      </ol>
+    </li>
+    <li><a href="#lemire-reduction">Lemire Reduction</a>
+      <ol>
+        <li><a href="#乘定值-1">乘定值</a></li>
+        <li><a href="#调整-1">调整</a></li>
+      </ol>
+    </li>
+    <li><a href="#montgomery-multiplication">Montgomery multiplication</a>
+      <ol>
+        <li><a href="#montgomery-空间">Montgomery 空间</a></li>
+        <li><a href="#reduce">Reduce</a></li>
+        <li><a href="#transform">Transform</a></li>
+        <li><a href="#更快的-2k-逆元">更快的 $2^k$ 逆元</a></li>
+      </ol>
+    </li>
+    <li><a href="#实现">实现</a></li>
+    <li><a href="#其他">其他</a></li>
+    <li><a href="#参考">参考</a></li>
+  </ol>
+</nav>
+    <section class="content-frame my-10">
+      <p>取模是很慢的，尤其是当模数是动态的数时。</p>
+<p>我没学过误差分析，大概讲法很民科（</p>
+<h2 id="浮点实现">浮点实现</h2>
+<p>显然有等式</p>
+<p> $$
+a \bmod m = a - \left\lfloor \frac{a}{m} \right\rfloor m
+$$ </p>
+<p>一般情况下是  $m$  是 <code>i32</code> 范围，且  $a \in [0, m^2)$ ，最简单的实现方式就是浮点除法。</p>
+<pre><code class="language-cpp">struct ModF {
+  u32 m;
+  f64 ivm;
+  ModF(i32 m_) : m(m_), ivm(1.0 / m) {}
+  u32 calc(u64 a) const {
+    u32 r = a - i64(a * ivm) * m;
+    if (r &gt;= m)
+      r -= m;
+    if (r &lt; 0)
+      r += m;
+    return r;
+  }
+};
+</code></pre>
+<h2 id="barrett-reduction">Barrett Reduction</h2>
+<p>考虑除法的一个替代，选取  $q, s$  使得等式</p>
+<p> $$
+\lfloor a/m \rfloor = \left\lfloor \frac{aq}{2^s} \right\rfloor, \quad q \approx \frac{2^s}{m}
+$$ </p>
+<p>对尽可能多的  $a$  成立。由于  $a$  是整数，设误差是</p>
+<p> $$
+\frac{q}{2^s} = \frac{1}{m} + \varepsilon 
+$$ </p>
+<p>当满足  $0 \leqslant a\varepsilon < \frac{1}{m}$  则除法是精确的，因此选择</p>
+<p> $$
+q = \left\lceil \frac{2^s}{m} \right\rceil = \left\lfloor \frac{2^s + m - 1}{m} \right\rfloor
+$$ </p>
+<p>是比较方便的。可以推得</p>
+<p> $$
+\varepsilon = \frac{q}{2^s} - \frac{1}{m} < \frac{2^s + m - 1}{2^sm}  -\frac{1}{m} = \frac{m-1}{m 2^s} < \overline{\varepsilon}
+$$ </p>
+<p>化简得到  $2^s > \frac{m - 1}{m \overline{\varepsilon}}$ 。假如  $a \in [0, m^2)$ ，大概需要  $s \approx 3\log_2 m$ 。</p>
+<pre><code class="language-cpp">struct Barrett {
+  enum { s = 96 };
+  static constexpr u128 s2 = u128(1) &lt;&lt; s;
+  u32 m;
+  u128 ivm;
+  Barrett(u32 m_) : m(m_), ivm((s2 - 1) / m + 1) {}
+  u32 div(u64 a) const {
+    return a * ivm &gt;&gt; s;
+  }
+  u32 calc(u64 a) const {
+    return a - u64(div(a)) * m;
+  }
+};
+</code></pre>
+<h3 id="乘定值">乘定值</h3>
+<p>倘若我们要计算  $a \times b \bmod m$ ，其中  $b$  是定值，可以把上式的一部分合并。</p>
+<p>推导过程没什么区别，重新考虑带入式，仍选择</p>
+<p> $$
+q = \left\lceil \frac{2^sb}{m} \right\rceil = \left\lfloor \frac{2^sb + m - 1}{m} \right\rfloor
+$$ </p>
+<p>由于  $a$  是整数，设误差是</p>
+<p> $$
+\frac{q}{2^s} = \frac{b}{m} + \varepsilon 
+$$ </p>
+<p>当满足  $0 \leqslant a\varepsilon < \frac{1}{m}$  则除法是精确的。推得</p>
+<p> $$
+\varepsilon = \frac{q }{2^s} - \frac{b}{m} < \frac{2^sb + m - 1}{2^s m}  -\frac{b}{m} = \frac{m-1}{m 2^s} < \overline{\varepsilon}
+$$ </p>
+<p>化简得到  $2^s > \frac{m - 1}{m \overline{\varepsilon}}$ 。假如  $a \in [0, m)$ ，大概需要  $s \approx 2\log_2 m$ 。</p>
+<pre><code class="language-cpp">struct MulBarrett {
+  enum { s = 64 };
+  static constexpr u128 s2 = u128(1) &lt;&lt; s;
+  u32 b, m;
+  u64 ivm;
+  MulBarrett(u32 b_, u32 m_) : b(b_), m(m_), ivm((s2 * b - 1) / m + 1) {}
+  u64 div(u64 a) const {
+    return u128(a) * ivm &gt;&gt; s;
+  }
+  u32 calc(u32 a) const {
+    return a * b - u64(div(a)) * m;
+  }
+};
+</code></pre>
+<h3 id="调整">调整</h3>
+<p>取模可以没必要一次到位。</p>
+<p>考虑一次调整（是调整取模结果，除法无法调整），即令  $0 \leqslant \varepsilon < \frac{1}{m}$ ，可以得到  $2^s > a - a / m$ ，例如当  $a \in [0, m)$  时有  $s \approx \log_2 m$ 。</p>
+<p>因此，定值乘法可以仅在 <code>u64</code> 下进行；若通过特殊的手段得到进位标志，<code>u64</code> 取模也是能仅在 <code>u64</code> 下完成的。</p>
+<p>因为允许调整，也就不必拘泥于向上取整，向下取整也是可以实现的。</p>
+<h2 id="lemire-reduction">Lemire Reduction</h2>
+<p>取模结果可以更直接的获得</p>
+<p> $$
+\begin{aligned}
+r
+&= \left\lfloor \left(\frac{a}{m} - \left\lfloor \frac{a}{m} \right\rfloor \right) m \right\rfloor \\
+&= \left\lfloor \left(\frac{aq}{2^s} - a \varepsilon - \left\lfloor \frac{aq}{m}  - a \varepsilon \right\rfloor \right) m \right\rfloor \\
+&= \left\lfloor \left(aq - \left\lfloor \frac{aq}{2^s}  - a \varepsilon \right\rfloor 2^s - 2^s a \varepsilon \right) \frac{m}{2^s} \right\rfloor
+\end{aligned}
+$$ </p>
+<p>假定除法精确，即  $0 \leqslant a \varepsilon < \frac{1}{m}$ ，注意到这里可以化成取模</p>
+<p> $$
+\begin{aligned}
+r
+&= \left\lfloor \frac{(aq \bmod 2^s) \cdot m}{2^s}  + a\varepsilon m  \right\rfloor  \\
+&= \left\lfloor \frac{(aq \bmod 2^s) \cdot m }{2^s} \right\rfloor
+\end{aligned}
+$$ </p>
+<p>精度还是  $s \approx 3\log_2 m$ 。</p>
+<pre><code class="language-cpp">struct Lemire {
+  enum { s = 96 };
+  static constexpr u128 s2 = u128(1) &lt;&lt; s;
+  u32 m;
+  u128 q;
+  Lemire(u32 m_) : m(m_), q((s2 - 1) / m + 1) {}
+  u32 calc(u64 a) const {
+    return a * q % s2 * u128(m) &gt;&gt; s;
+  }
+};
+</code></pre>
+<h3 id="乘定值-1">乘定值</h3>
+<p>同样推导</p>
+<p> $$
+\begin{aligned}
+r
+&= \left\lfloor \left(aq - \left\lfloor \frac{aq}{2^s}  - a \varepsilon \right\rfloor 2^s - 2^s a \varepsilon \right) \frac{m}{2^s} \right\rfloor \\
+&= \left\lfloor \frac{(aq \bmod 2^s) \cdot m }{2^s} \right\rfloor
+\end{aligned}
+$$ </p>
+<p>精度仍是除法精确的  $s \approx 2\log_2 m$ 。</p>
+<pre><code class="language-cpp">struct MulLemire {
+  enum { s = 64 };
+  static constexpr u128 s2 = u128(1) &lt;&lt; s;
+  u32 b, m;
+  u64 q;
+  MulLemire(u32 b_, u32 m_) : b(b_), m(m_), q((s2 * b - 1) / m + 1) {}
+  u32 calc(u32 a) const {
+    return a * q * u128(m) &gt;&gt; s;
+  }
+};
+</code></pre>
+<h3 id="调整-1">调整</h3>
+<p>Lemire Reduction 无法调整。</p>
+<p>前面能调整是因为除法误差为 1，所以取模后只会差  $m$  的倍数；这里直接算出了取模，差了 1 差了 2 你也没办法校正，所以无法调整。</p>
+<h2 id="montgomery-multiplication">Montgomery multiplication</h2>
+<p>Montgomery multiplication 能够更好的利用 SIMD 加速，编译器也能够自动向量化。</p>
+<p>带调整的 Barrett 乘定值优化由于不涉及 <code>u128</code>，编译器也能够向量化，但除法的代价较高，总之还是不太行。</p>
+<h3 id="montgomery-空间">Montgomery 空间</h3>
+<p>设常数  $r$  满足  $ \gcd(r, m) = 1$  且  $r \geqslant m$ ，一般选择  $2^{64}$  或  $2^{32}$ 。</p>
+<p>定义  $x$  在 Montgomery 空间中的值为</p>
+<p> $$
+\overline{x} = xr \bmod m
+$$ </p>
+<p>加减是平凡的</p>
+<p> $$
+\overline{x} \pm \overline{y} = (x \pm y) r \bmod m
+$$ </p>
+<p>乘法有些特殊</p>
+<p> $$
+\overline{x} \ast \overline{y} = xy r = \overline{x} \cdot \overline{y} \cdot r^{-1} \bmod m
+$$ </p>
+<p>因此关键在于两个函数：</p>
+<ul>
+<li><code>transform</code>：计算  $x \cdot r \bmod m$ ；</li>
+<li><code>reduce</code>：计算  $x \cdot r^{-1} \bmod m$ 。</li>
+</ul>
+<h3 id="reduce">Reduce</h3>
+<p>Montgomery 指出了除 2 不需要除法：</p>
+<p> $$
+\frac{a}{2} \bmod m  =
+\begin{cases}
+\frac{a}{2}  &, a \text{ 是偶数} \\
+\frac{a + m}{2} &, a\text{ 是奇数} \\
+\end{cases}
+$$ </p>
+<p>且例如  $r = 2^{32}$  时</p>
+<p> $$
+a - a \equiv a - m (a m^{-1}) \equiv 0 \pmod r
+$$ </p>
+<p>因此设置  $\mu = -m^{-1} \bmod r$ ，有</p>
+<p> $$
+x r^{-1} \equiv \frac{x + m(x\mu \bmod r)}{r} \pmod m 
+$$ </p>
+<p>再考虑值域，发现上式小于  $2m$ 。但是中间运算的没必要求值，可以惰性一点，最后映出时再规整。</p>
+<h3 id="transform">Transform</h3>
+<p>一般输入都是  $[0, m)$ ，直接乘就行；也可以利用 reduction，但是不会更优。</p>
+<p>或许可以尝试用 Barrett 优化一下？我没测试过，猜想带调整的更快一点。</p>
+<h3 id="更快的-2k-逆元">更快的  $2^k$  逆元</h3>
+<p>在  $r$  是  $2$  的幂次时，逆元可以用牛顿迭代。假设  $x$  是  $a$  在  $2^k$  下的逆元</p>
+<p> $$
+ax \equiv 2^k q + 1 \pmod {2^{2k}}
+$$ </p>
+<p>那么</p>
+<p> $$
+ax(2-ax) \equiv 1 - 2^{2k}q^2 \equiv 1 \pmod {2^{2k}}
+$$ </p>
+<h2 id="实现">实现</h2>
+<pre><code class="language-cpp">struct Montgomery {
+  u32 m, ir;
+  static u32 inv_m(u32 m) {
+    u32 x = 1;
+    for (i32 i = 0; i &lt; 5; ++i)
+      x *= 2 - x * m;
+    return x;
+  }
+  Montgomery(u32 m_) : m(m_), ir(-inv_m(m)) {}
+  u32 tran(u32 a) const {
+    return (u64(a) &lt;&lt; 32) % m;
+  }
+  u32 val(u32 a) const { // itrans
+    return redc_m(redc(a) - m);
+  }
+  u32 add(u32 a, u32 b) const {
+    return redc_m2(a + b - m * 2);
+  }
+  u32 sub(u32 a, u32 b) const {
+    return redc_m2(a - b);
+  }
+  u32 redc_m(u32 a) const {
+    return a &gt;&gt; 31 ? a + m : a;
+  }
+  u32 redc_m2(u32 a) const {
+    return a &gt;&gt; 31 ? a + m * 2 : a;
+  }
+  u32 redc(u64 a) const {
+    return (a + u64(u32(a) * ir) * m) &gt;&gt; 32;
+  }
+  u32 mul(u32 a, u32 b) const {
+    return redc(u64(a) * b);
+  }
+};
+</code></pre>
+<h2 id="其他">其他</h2>
+<p><a href="https://www.luogu.com.cn/blog/plateIet/modulo-proof">@platelet</a> 在他的博客 <a href="https://www.luogu.com.cn/blog/plateIet/modulo">速度是编译器实现两倍的取模算法</a> 中提到了 Lemire Reduction 的乘定值优化。但是除法的代价太高，在长  $n$  的 NTT 中有  $O(n)$  个单位根需要处理，并不能表现出优势。反到是 Barrett 更优一点。</p>
+<p>除法代价高，初始化或许可以再套一次 Barrett？下次有空了试试。</p>
+<h2 id="参考">参考</h2>
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Barrett_reduction">https://en.wikipedia.org/wiki/Barrett_reduction</a></li>
+<li><a href="https://en.algorithmica.org/hpc/arithmetic/division/">https://en.algorithmica.org/hpc/arithmetic/division/</a></li>
+<li><a href="https://arxiv.org/pdf/1407.3383.pdf">https://arxiv.org/pdf/1407.3383.pdf</a></li>
+</ul>
+
+    </section>
+    <hr />
+    <section class="comment-frame my-10">
+      
+
+
+  <div class="giscus"></div>
+<script>
+let giscusTheme = localStorage.getItem("giscus-theme");
+let giscusAttributes = () => {
+  return {
+    "src": "https://giscus.app/client.js",
+    "data-repo": "rogeryoungh\/blog",
+    "data-repo-id": "MDEwOlJlcG9zaXRvcnkzODQyNDIyNTQ=",
+    "data-category": "Giscus",
+    "data-category-id": "DIC_kwDOFucSTs4CTTLS",
+    "data-mapping": "pathname",
+    "data-strict": "0",
+    "data-reactions-enabled": "1",
+    "data-emit-metadata": "0",
+    "data-input-position": "bottom",
+    "data-theme": isCurrentDark() ? 'dark' : 'light',
+    "data-lang": "zh-CN",
+    "crossorigin": "anonymous",
+    "async": "",
+  }
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+  let giscusScript = document.createElement("script");
+  Object.entries(giscusAttributes()).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+  document.body.appendChild(giscusScript);
+});
+
+
+function changeGiscusTheme(theme) {
+  const sendMessage = (message) => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+    iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+  }
+  sendMessage({
+    setConfig: {
+      theme: theme
+    }
+  });
+}
+</script>
+
+
+
+    </section>
+  </article>
+</main>
+
+
+<footer class="my-10 color-secondary text-3 flex items-end justify-center a-underline">
+  <span>
+    © 2021 <a href="https://acm.rogery.dev">Roger Young</a>
+  </span>
+  <i class="i-carbon-lighting inline-block px-1"></i>
+  <span>Powered by <a href="https://gohugo.io/">Hugo</a> &
+    <a href="https://github.com/rogeryoungh/hugo-pure">pure</a>
+  </span>
+</footer>
+</div>
+  <div>
+    
+  <link
+  crossorigin="anonymous"
+  integrity="sha512-mQwom8Ns4op+H29oDkD/LXO/OsXPvCFfkgZkFAVrhhePzRLU8NUI3Nkm43NhWUSmj3p5Cca2HTEkMQmXQRwDQQ=="
+  href="https://lib.baomitu.com/KaTeX/0.16.4/katex.min.css" rel="stylesheet">
+<script
+  crossorigin="anonymous"
+  integrity="sha512-sHSNLECRJSK+BFs7E8DiFc6pf6n90bLI85Emiw1jhreduZhK3VXgq9l4kAt9eTIHYAcuQBKHL01QKs4/3Xgl8g=="
+  src="https://lib.baomitu.com/KaTeX/0.16.4/katex.min.js"></script>
+<script
+  crossorigin="anonymous"
+  integrity="sha512-iWiuBS5nt6r60fCz26Nd0Zqe0nbk1ZTIQbl3Kv7kYsX+yKMUFHzjaH2+AnM6vp2Xs+gNmaBAVWJjSmuPw76Efg=="
+  src="https://lib.baomitu.com/KaTeX/0.16.4/contrib/auto-render.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderMathInElement(document.body, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false },
+      { left: '\\(', right: '\\)', display: false },
+      { left: '\\[', right: '\\]', display: true },
+    ],
+    globalGroup: true,
+    throwOnError: false
+  });
+});
+</script>
+
+
+
+
+  <script
+  crossorigin="anonymous"
+  src="https://lib.baomitu.com/prism/1.29.0/prism.min.js"></script>
+<script
+  crossorigin="anonymous"
+  src="https://lib.baomitu.com/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+
+
+<script>
+let themeSwitch = document.getElementById("theme-switcher");
+var icon = themeSwitch.children[0];
+let currentPref = localStorage.getItem('pref-theme') || 'auto';
+let html = document.documentElement;
+let windowPref = window.matchMedia('(prefers-color-scheme: dark)');
+function isCurrentDark() {
+  let isDark = false;
+  if (currentPref === 'light') {
+    isDark = false;
+  } else if (currentPref === 'dark') {
+    isDark = true;
+  } else {
+    isDark = windowPref.matches;
+  }
+  return isDark;
+}
+let reloadTheme = () => {
+  icon.classList.remove('i-carbon-moon');
+  icon.classList.remove('i-carbon-sun');
+  icon.classList.remove('i-carbon-automatic');
+  if (currentPref === 'light') {
+    icon.classList.add('i-carbon-sun');
+  } else if (currentPref === 'dark') {
+    icon.classList.add('i-carbon-moon');
+  } else {
+    icon.classList.add('i-carbon-automatic');
+  }
+  if (isCurrentDark()) {
+    html.classList.add('dark');
+  } else {
+    html.classList.remove('dark');
+  }
+  
+    changeGiscusTheme(isCurrentDark() ? 'dark' : 'light');
+  
+};
+themeSwitch.addEventListener("click", () => {
+  icon.classList.remove('i-carbon-moon');
+  icon.classList.remove('i-carbon-sun');
+  icon.classList.remove('i-carbon-automatic');
+  if (currentPref === 'auto') {
+    currentPref = 'dark';
+    icon.classList.add('i-carbon-moon');
+  } else if (currentPref === 'dark') {
+    currentPref = 'light';
+    icon.classList.add('i-carbon-sun');
+  } else {
+    currentPref = 'auto';
+    icon.classList.add('i-carbon-automatic');
+  }
+  localStorage.setItem("pref-theme", currentPref);
+  reloadTheme();
+});
+reloadTheme();
+</script>
+
+
+  </div>
+</body>
+
+</html>
