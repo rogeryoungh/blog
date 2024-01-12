@@ -9,6 +9,20 @@
     <copyright>© 2021 [Roger Young](https://acm.rogery.dev)</copyright>
     <lastBuildDate>Tue, 02 Feb 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://acm.rogery.dev/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>满二叉树的非递归 DFS 序遍历</title>
+      <link>https://acm.rogery.dev/post/norec-dfs/</link>
+      <pubDate>Fri, 12 Jan 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://acm.rogery.dev/post/norec-dfs/</guid>
+      <description>CDQ 分治 是一种分治合并贡献的思想，主要是在递归树上遍历。半在线卷积算法其中就有 CDQ 分治的思想，而且其递归树是满二叉树。
+很久以前造半在线卷积的时候，为了让分治与数据流解偶，想办法用位运算 改造成 next 形式。@HolyK 似乎更早的注意到这一点（原博客好像消失了），并总结出相当一部分的 CDQ 都可以应用这种技巧。
+考研学到二叉树时又捡起这个想法，半在线卷积只是中序遍历，其他序能不能也这样做呢？
+本文主要总结了满二叉树的非递归实现，即需要保证 $n$ 具有 $2^k$ 的形式。
+BFS 序 BFS 序即层序遍历，大家应该比较熟悉了。FFT 的迭代版一般用这个。
+void levelorder1(int n) { // 自底向上 for (int l = 1; l &amp;lt;= n; l *= 2) { for (int i = 0; i &amp;lt; n; i += l) { std::printf(&amp;quot;[%d, %d)\t\n&amp;quot;, i, i + l); } } } void levelorder2(int n) { // 自顶向下 for (int l = n; l &amp;gt;= 1; l /= 2) { for (int i = 0; i &amp;lt; n; i += l) { std::printf(&amp;quot;[%d, %d)\t\n&amp;quot;, i, i + l); } } } DFS 序 DFS 序有三种：</description>
+    </item>
+    
+    <item>
       <title>优化取模的几种方法</title>
       <link>https://acm.rogery.dev/post/learn-fastmod/</link>
       <pubDate>Tue, 07 Feb 2023 00:00:00 +0000</pubDate>
