@@ -52,9 +52,9 @@
     <li><a href="#二号选手swarsimd-within-a-register">二号选手：SWAR（SIMD within a Register）</a>
       <ol>
         <li><a href="#不足长">不足长</a></li>
-        <li><a href="#三号选手打表">三号选手：打表</a></li>
       </ol>
     </li>
+    <li><a href="#三号选手打表">三号选手：打表</a></li>
     <li><a href="#性能分析">性能分析</a></li>
     <li><a href="#后记">后记</a></li>
     <li><a href="#参考资料">参考资料</a></li>
@@ -306,7 +306,7 @@ inline static u64 swar_64_getu(const char *&amp;p) {
 }
 </code></pre>
 <p>我也尝试使用 AVX2 指令集进行实现，但是因为乘法位数不够，上述操作很难向量化，我的简陋实现的性能表现非常差，就不放出来丢脸了。</p>
-<h3 id="三号选手打表">三号选手：打表</h3>
+<h2 id="三号选手打表">三号选手：打表</h2>
 <p>比性能怎么少得了打表呢！</p>
 <p>预处理一个字符串 <code>u16</code> 到数值的表即可，再对边界情况判断一下。</p>
 <pre><code class="language-cpp">template &lt;class T&gt;
