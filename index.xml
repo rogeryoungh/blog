@@ -9,6 +9,21 @@
     <copyright>© 2021 [Roger Young](https://acm.rogery.dev)</copyright>
     <lastBuildDate>Tue, 02 Feb 2021 00:00:00 +0000</lastBuildDate><atom:link href="https://acm.rogery.dev/index.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>快读优化：无符号整数解析的几种 trick</title>
+      <link>https://acm.rogery.dev/post/faster-int-parse/</link>
+      <pubDate>Fri, 16 Feb 2024 00:00:00 +0000</pubDate>
+      
+      <guid>https://acm.rogery.dev/post/faster-int-parse/</guid>
+      <description>学习性能分析的小作业。
+即 OIer/ACMer 常说的快读。本文测试了一种另类且易于实现的快读，结果表明快 50% 左右。
+在开始之前，我对问题做以下约束：
+输入是类似 0 123\n456 123456789 的字符串，仅包含 ascii 字符 数字的范围是 $[0, 10^{18}]$ ，不考虑 u64 边界 实际中一般只有单个间隔符，但也要能够正确处理多个间隔符 在 O2 或者 O3 优化等级下进行测试 依据输入的性质，特化两种算法： 严格：输入是 ascii 字符 非严格（TODO）：仅有数字字符的值大于 0x30 接下来我将做几种实现，并使用 nanobench 库来进行性能测试。
+一号选手：isdigit 最常见的快读往往使用 isdigit 或者等价的 &#39;0&#39; &amp;lt;= c &amp;amp;&amp;amp; c &amp;lt;= &#39;9&#39; 来进行实现。
+常见的快读长这样：
+inline static u64 isd_0_getu(const char *&amp;amp;p) { char c = *p++; while (!std::isdigit(c)) c = *p++; u64 x = c - &#39;0&#39;; for (c = *p++; std::isdigit(c); c = *p++) x = x * 10 + c - &#39;0&#39;; return x; } 接下来对单间隔符，瞎写了种优化：</description>
+    </item>
+    
+    <item>
       <title>满二叉树的非递归 DFS 序遍历</title>
       <link>https://acm.rogery.dev/post/norec-dfs/</link>
       <pubDate>Fri, 12 Jan 2024 00:00:00 +0000</pubDate>

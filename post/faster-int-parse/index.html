@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html><head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta name="generator" content="Hugo 0.110.0-DEV">
+
+  
+  
+  <link rel="stylesheet" href="/scss/index.min.95ba81376e079da48068412714d3b5b407c6cec0c5edbf6ebc255278b7938d7c.css">
+
+</head>
+<body>
+  <div id="app"><header class="py-5 text-4 flex justify-center shadow print:hidden color-primary">
+  <nav class="mx-20 w-full max-w-240 flex flex-wrap justify-center items-center whitespace-nowrap sm:flex-nowrap sm:justify-between">
+    <div class="flex basis-full items-stretch justify-center sm:basis-auto">
+      <img class="w-12 h-12 self-center" src="https://rogery.dev/img/logo.png">
+      <a class="pl-5 font-bold flex self-center text-5" href="/"> Roger Young </a>
+    </div>
+    <ul class="pl-0 flex mt-5 self-center sm:mt-0">
+      <button class="m-3 self-center" id="theme-switcher">
+        <i class="i-carbon-automatic text-4">Sun</i>
+      </button>
+      <li class="flex"><a class="m-3" href="/post">Posts</a></li>
+      <li class="flex"><a class="m-3" href="/tag">Tag</a></li>
+      <li class="flex"><a class="m-3" href="/about">About</a></li>
+    </ul>
+  </nav>
+</header>
+
+
+<main class="px-5 flex justify-center">
+  <article class="article w-full max-w-210 my-10">
+    <header class="my-20">
+      <h1 class="text-8 text-center folt-bold"> 快读优化：无符号整数解析的几种 trick </h1>
+      <a
+        class="text-center-my-6 hidden print:block"
+        href="https://rogery.dev/">
+        rogeryoungh
+      </a>
+      <div class="text-center"> 2024 年 2 月 16 日 </div>
+    </header>
+    
+      <h1> 目录 </h1><nav id="TableOfContents">
+  <ol>
+    <li><a href="#一号选手isdigit">一号选手：isdigit</a>
+      <ol>
+        <li><a href="#性能测试">性能测试</a></li>
+      </ol>
+    </li>
+    <li><a href="#二号选手swarsimd-within-a-register">二号选手：SWAR（SIMD within a Register）</a>
+      <ol>
+        <li><a href="#不足长">不足长</a></li>
+        <li><a href="#三号选手打表">三号选手：打表</a></li>
+      </ol>
+    </li>
+    <li><a href="#性能分析">性能分析</a></li>
+    <li><a href="#后记">后记</a></li>
+    <li><a href="#参考资料">参考资料</a></li>
+  </ol>
+</nav>
+    <section class="content-frame my-10">
+      <blockquote>
+<p>学习性能分析的小作业。</p>
+</blockquote>
+<p>即 OIer/ACMer 常说的快读。本文测试了一种另类且易于实现的快读，结果表明快 50% 左右。</p>
+<p>在开始之前，我对问题做以下约束：</p>
+<ul>
+<li>输入是类似 <code>0 123\n456 123456789</code> 的字符串，仅包含 ascii 字符</li>
+<li>数字的范围是  $[0, 10^{18}]$  ，不考虑 <code>u64</code> 边界</li>
+<li>实际中一般只有单个间隔符，但也要能够正确处理多个间隔符</li>
+<li>在 O2 或者 O3 优化等级下进行测试</li>
+<li>依据输入的性质，特化两种算法：
+<ul>
+<li>严格：输入是 ascii 字符</li>
+<li>非严格（TODO）：仅有数字字符的值大于 <code>0x30</code></li>
+</ul>
+</li>
+</ul>
+<p>接下来我将做几种实现，并使用 <code>nanobench</code> 库来进行性能测试。</p>
+<h2 id="一号选手isdigit">一号选手：isdigit</h2>
+<p>最常见的快读往往使用 <code>isdigit</code> 或者等价的 <code>'0' &lt;= c &amp;&amp; c &lt;= '9'</code> 来进行实现。</p>
+<p>常见的快读长这样：</p>
+<pre><code class="language-cpp">inline static u64 isd_0_getu(const char *&amp;p) {
+  char c = *p++;
+  while (!std::isdigit(c))
+    c = *p++;
+  u64 x = c - '0';
+  for (c = *p++; std::isdigit(c); c = *p++)
+    x = x * 10 + c - '0';
+  return x;
+}
+</code></pre>
+<p>接下来对单间隔符，瞎写了种优化：</p>
+<pre><code class="language-cpp">inline static u64 isd_1_getu(const char *&amp;p) {
+  while (true) {
+    char c = *p++;
+    if (std::isdigit(c)) {
+      u64 x = c - '0';
+      for (c = *p++; std::isdigit(c); c = *p++)
+        x = x * 10 + c - '0';
+      return x;
+    }
+  }
+}
+</code></pre>
+<p>江湖上还流传一些“优化”，我也尝试实现了其中部分：</p>
+<ul>
+<li><code>isd-0</code> ：上文中的 <code>isdigit_0_getu</code></li>
+<li><code>isd-1</code> ：上文中的 <code>isdigit_1_getu</code></li>
+<li><code>isd-u8</code> ：用 <code>u8</code> 存 <code>char</code></li>
+<li><code>isd-m10</code>：把乘 10 写成 <code>(c &lt;&lt; 3) + (c &lt;&lt; 1)</code></li>
+<li><code>isd-and</code>：把 <code>c - '0'</code> 写成 <code>c &amp; 0xf</code></li>
+<li><code>isd-xor</code>：把 <code>c - '0'</code> 写成 <code>c ^ '0'</code></li>
+<li><code>isd-range</code>：把 <code>isdigit</code> 写成 <code>'0' &lt;= c &amp;&amp; c &lt;= '9'</code></li>
+<li><code>isd-sub</code>：把 <code>isdigit</code> 写成 <code>u8(c - '0') &lt;= 9</code>，后面还可以省一次减法</li>
+<li><code>isd-goto</code>：不用循环，用 <code>goto</code> 来书写逻辑。</li>
+<li><code>isd-sub-1</code>：把上面跑得快的实现杂交一下</li>
+<li><code>isd-sub-2</code>：循环展开 20 次</li>
+</ul>
+<h3 id="性能测试">性能测试</h3>
+<p>具体的测试方法见后文，这里只展示在 <code>gcc -O2</code> 下的结果（单位 us）。</p>
+<table>
+<thead>
+<tr>
+<th>算法/长度</th>
+<th>1</th>
+<th>2</th>
+<th>4</th>
+<th>8</th>
+<th>12</th>
+<th>16</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>isd-0</td>
+<td>1057</td>
+<td>1757</td>
+<td>3145</td>
+<td>6086</td>
+<td>8854</td>
+<td>11569</td>
+</tr>
+<tr>
+<td>isd-1</td>
+<td>1056</td>
+<td>1638</td>
+<td>3029</td>
+<td>5917</td>
+<td>8715</td>
+<td>11452</td>
+</tr>
+<tr>
+<td>isd-u8</td>
+<td>881</td>
+<td>1322</td>
+<td>2627</td>
+<td>4948</td>
+<td>7863</td>
+<td>10403</td>
+</tr>
+<tr>
+<td>isd-m10</td>
+<td>881</td>
+<td>1322</td>
+<td>2628</td>
+<td>4963</td>
+<td>7885</td>
+<td>10404</td>
+</tr>
+<tr>
+<td>isd-and</td>
+<td>924</td>
+<td>1322</td>
+<td>2633</td>
+<td>5151</td>
+<td>7942</td>
+<td>10271</td>
+</tr>
+<tr>
+<td>isd-xor</td>
+<td>1057</td>
+<td>1499</td>
+<td>3715</td>
+<td>5630</td>
+<td>8356</td>
+<td>11253</td>
+</tr>
+<tr>
+<td>isd-range</td>
+<td>881</td>
+<td>1371</td>
+<td>2393</td>
+<td>4853</td>
+<td>7162</td>
+<td>9851</td>
+</tr>
+<tr>
+<td>isd-range-1</td>
+<td>793</td>
+<td>1295</td>
+<td>2360</td>
+<td>4811</td>
+<td>7720</td>
+<td>9978</td>
+</tr>
+<tr>
+<td>isd-sub</td>
+<td>793</td>
+<td>1410</td>
+<td>2637</td>
+<td>5145</td>
+<td>7831</td>
+<td>10637</td>
+</tr>
+<tr>
+<td>isd-goto</td>
+<td>801</td>
+<td>1453</td>
+<td>2652</td>
+<td>4749</td>
+<td>8107</td>
+<td>10639</td>
+</tr>
+<tr>
+<td>isd-sub-1</td>
+<td>793</td>
+<td>1293</td>
+<td>2389</td>
+<td>4768</td>
+<td>7842</td>
+<td>9791</td>
+</tr>
+<tr>
+<td>isd-sub-2</td>
+<td>797</td>
+<td>1321</td>
+<td>2194</td>
+<td>4198</td>
+<td>6567</td>
+<td>8923</td>
+</tr>
+</tbody>
+</table>
+<p>据此，我们可以得到一些结论：</p>
+<ul>
+<li>性能基本相近，短数字略有差距</li>
+<li><code>isd-m10</code> 与 <code>isd-u8</code> 生成的汇编完全相同
+<ul>
+<li><code>lea</code> 指令非常强大，能够完成加乘混合计算，比如 <code>x * 10 + c - '0'</code> 仅需两条指令</li>
+</ul>
+</li>
+<li><code>isd-xor</code> 异或可能会让性能略降</li>
+<li><code>isd-range</code> 编译器把范围判断优化成减法判断，且减法使用 <code>lea</code> 而不是 <code>sub</code>，性能有神秘提升</li>
+<li><code>isd-sub</code> 看似优化了一次减法，但是 <code>movzbl</code> 只加载到 <code>eax</code>，仍需要一条指令扩充至 64 位，在本地 <code>and</code> 莫名更快</li>
+</ul>
+<p>接下来仅保留部分作为代表继续参与测试。</p>
+<h2 id="二号选手swarsimd-within-a-register">二号选手：SWAR（SIMD within a Register）</h2>
+<p>举个例子，字符串 <code>&quot;42&quot;</code> 读取为 <code>u16</code> 是 <code>0x3234</code>（默认小端），即 <code>0x0204</code>。我们需要一个类似 <code>(x &lt;&lt; 8) * 10 + x</code> 的操作让高位与低位正确的合并。</p>
+<p>整理一下就是乘以 <code>0x0a01</code>。即 <code>0x0204 * 0x0a01 = 0x142a04</code>，目标值 <code>0x2a = 42</code> 就在其中。类似的，我们可以设计实现 <code>u32</code> 或 <code>u64</code> 乃至更长的合并。</p>
+<p>推荐阅读：<a href="https://kholdstare.github.io/technical/2020/05/26/faster-integer-parsing.html">Faster Integer Parsing</a>，图很直观。</p>
+<h3 id="不足长">不足长</h3>
+<p>对于不足长的字符串，我们还得再想想办法。</p>
+<ul>
+<li>合法的数字仅在 <code>0x30</code> 到 <code>0x39</code> 之间，因此仅有数字 <code>y = x &amp; (x + 6)</code> 仍以 <code>0x30</code> 开头；</li>
+<li>再经过 <code>z = (y &amp; 0xf0f0) ^ 0x3030</code>，把数字位归零；</li>
+<li>借助于位运算魔法，<code>len = std::countl_zero(z) &gt;&gt; 3</code>；</li>
+<li>最后使用 <code>u = x &gt;&gt; (16 - (len &lt;&lt; 3))</code>，把数字对齐。</li>
+</ul>
+<p>另外，<code>std::countl_zero</code> 比 <code>ctz</code> 指令多了特判 0，编译器会为此优化生成快速路径，性能数据会在此跳跃。此处我选择了手工处理。</p>
+<p>总之，我们可以比较容易的对 16、32、64 字长进行实现。这里仅展示 <code>u64</code> 实现。</p>
+<pre><code class="language-cpp">inline static u64 _swar_64(u64 u) {
+  u = (u &amp; 0x0f0f0f0f0f0f0f0f) * 0x0a01 &gt;&gt; 0x08;
+  u = (u &amp; 0x00ff00ff00ff00ff) * 0x00640001 &gt;&gt; 0x10;
+  u = (u &amp; 0x0000ffff0000ffff) * 0x271000000001 &gt;&gt; 0x20;
+  return u;
+}
+
+inline static u64 swar_64_getu(const char *&amp;p) {
+  u64 x = 0;
+  while (u8(*p - '0') &gt; 9)
+    p++;
+  constexpr u32 p10[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000};
+  constexpr u64 cx30 = 0x3030303030303030;
+  while (true) {
+    u64 u = *reinterpret_cast&lt;const u64 *&gt;(p);
+    u64 umask = u &amp; (u + 0x0606060606060606) &amp; 0xf0f0f0f0f0f0f0f0;
+    if (umask == cx30) {
+      p += 8;
+      x = x * p10[8] + _swar_64(u);
+    } else {
+      u64 len = std::countr_zero(umask ^ cx30) &gt;&gt; 3;
+      if (len != 0) {
+        u &lt;&lt;= 64 - (len &lt;&lt; 3);
+        p += len;
+        x = x * p10[len] + _swar_64(u);
+      }
+      break;
+    }
+  }
+  p++;
+  return x;
+}
+</code></pre>
+<p>我也尝试使用 AVX2 指令集进行实现，但是因为乘法位数不够，上述操作很难向量化，我的简陋实现的性能表现非常差，就不放出来丢脸了。</p>
+<h3 id="三号选手打表">三号选手：打表</h3>
+<p>比性能怎么少得了打表呢！</p>
+<p>预处理一个字符串 <code>u16</code> 到数值的表即可，再对边界情况判断一下。</p>
+<pre><code class="language-cpp">template &lt;class T&gt;
+T *_prepare_16_table() {
+  constexpr u32 N = 0x10000;
+  T *f = new T[N];
+  std::memset(f, -1, N);
+  for (u32 i = 0; i != 0x100; ++i) {
+    for (u32 j = 0; j != 10; ++j) {
+      u32 t = i * 0x100 | j | 0x30;
+      if ('0' &lt;= i &amp;&amp; i &lt;= '9')
+        f[t] = j * 10 + i - 0x30;
+      else
+        f[t] = j | 0x100;
+    }
+  }
+  return f;
+}
+
+inline u64 pre_16_getu(const char *&amp;p) {
+  static const auto *pre16 = _prepare_16_table&lt;u16&gt;();
+  u8 c = *p++ - '0';
+  while (c &gt; 9)
+    c = *p++ - '0';
+  u64 x = c;
+  while (true) {
+    u16 t = *reinterpret_cast&lt;const u16 *&gt;(p);
+    auto ft = pre16[t];
+    p += 2;
+    if (ft &lt; 100) { // len = 2
+      x = x * 100 + ft;
+    } else { // len = 1
+      if (ft &lt; 0x1000)
+        x = x * 10 + ft - 0x100;
+      else
+        --p;
+      break;
+    }
+  }
+  return x;
+}
+</code></pre>
+<h2 id="性能分析">性能分析</h2>
+<p>测试方法：解析包含  $2^{20}$  个数字的字符串，禁止循环展开（nounroll）。</p>
+<p><img src="../img/parse-int-swar-perf.png" alt="性能表现"></p>
+<p>我们可以分析出以下结论：</p>
+<ul>
+<li>以 <code>isd-0</code> 为基准，<code>sub-2</code> 的效率约为 122%，还是有一定的性能提升的。</li>
+<li><code>swar</code> 系在长数字情形下表现下十分优秀，例如 <code>swar-64</code> 效率可达 159%，在 len = 16 处更是高达 250%，但是 len = 1 处仅有 21%，短数字开销过大。</li>
+<li><code>pre-16</code> 有更好的常数，中长数字下的效率约为 152%。</li>
+</ul>
+<p>总之，我选择 <code>pre-16</code> 作为最终实现。</p>
+<h2 id="后记">后记</h2>
+<p>某天对 NTT 日常卡常时，突然怀疑起读入的效率。为此查了几篇资料，终有此文。</p>
+<p>还有一些无暇琢磨的瞎想：</p>
+<ul>
+<li>或许可以把 <code>sub-2</code> 与 <code>pre-16</code> 再杂交一下；</li>
+<li>可以一次读取 <code>u64</code>，用位运算模拟读取 <code>u16</code>、<code>u32</code>，可能比每次读取快；</li>
+<li>可以测试一下循环展开下的性能，编译器可以对更好的排布指令，得到更低的延时；</li>
+</ul>
+<h2 id="参考资料">参考资料</h2>
+<ul>
+<li><a href="https://kholdstare.github.io/technical/2020/05/26/faster-integer-parsing.html">Faster Integer Parsing</a></li>
+<li><a href="https://weedge.github.io/post/simd/faster_integer_parsing/">译：更快的字符串转整数</a></li>
+<li><a href="http://0x80.pl/articles/simd-parsing-int-sequences.html">Parsing series of integers with SIMD</a></li>
+<li><a href="https://lemire.me/blog/2023/11/28/parsing-8-bit-integers-quickly/">Parsing 8-bit integers quickly</a></li>
+</ul>
+
+    </section>
+    <hr />
+    <section class="comment-frame my-10">
+      
+
+
+  <div class="giscus"></div>
+<script>
+let giscusTheme = localStorage.getItem("giscus-theme");
+let giscusAttributes = () => {
+  return {
+    "src": "https://giscus.app/client.js",
+    "data-repo": "rogeryoungh\/blog",
+    "data-repo-id": "MDEwOlJlcG9zaXRvcnkzODQyNDIyNTQ=",
+    "data-category": "Giscus",
+    "data-category-id": "DIC_kwDOFucSTs4CTTLS",
+    "data-mapping": "pathname",
+    "data-strict": "0",
+    "data-reactions-enabled": "1",
+    "data-emit-metadata": "0",
+    "data-input-position": "bottom",
+    "data-theme": isCurrentDark() ? 'dark' : 'light',
+    "data-lang": "zh-CN",
+    "crossorigin": "anonymous",
+    "async": "",
+  }
+};
+
+document.addEventListener("DOMContentLoaded", function () {
+  let giscusScript = document.createElement("script");
+  Object.entries(giscusAttributes()).forEach(([key, value]) => giscusScript.setAttribute(key, value));
+  document.body.appendChild(giscusScript);
+});
+
+
+function changeGiscusTheme(theme) {
+  const sendMessage = (message) => {
+    const iframe = document.querySelector('iframe.giscus-frame');
+    if (!iframe) return;
+    iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+  }
+  sendMessage({
+    setConfig: {
+      theme: theme
+    }
+  });
+}
+</script>
+
+
+
+    </section>
+  </article>
+</main>
+
+
+<footer class="my-10 color-secondary text-3 flex items-end justify-center a-underline">
+  <span>
+    © 2021 <a href="https://acm.rogery.dev">Roger Young</a>
+  </span>
+  <i class="i-carbon-lighting inline-block px-1"></i>
+  <span>Powered by <a href="https://gohugo.io/">Hugo</a> &
+    <a href="https://github.com/rogeryoungh/hugo-pure">pure</a>
+  </span>
+</footer>
+</div>
+  <div>
+    
+  <link
+  crossorigin="anonymous"
+  integrity="sha512-mQwom8Ns4op+H29oDkD/LXO/OsXPvCFfkgZkFAVrhhePzRLU8NUI3Nkm43NhWUSmj3p5Cca2HTEkMQmXQRwDQQ=="
+  href="https://lib.baomitu.com/KaTeX/0.16.4/katex.min.css" rel="stylesheet">
+<script
+  crossorigin="anonymous"
+  integrity="sha512-sHSNLECRJSK+BFs7E8DiFc6pf6n90bLI85Emiw1jhreduZhK3VXgq9l4kAt9eTIHYAcuQBKHL01QKs4/3Xgl8g=="
+  src="https://lib.baomitu.com/KaTeX/0.16.4/katex.min.js"></script>
+<script
+  crossorigin="anonymous"
+  integrity="sha512-iWiuBS5nt6r60fCz26Nd0Zqe0nbk1ZTIQbl3Kv7kYsX+yKMUFHzjaH2+AnM6vp2Xs+gNmaBAVWJjSmuPw76Efg=="
+  src="https://lib.baomitu.com/KaTeX/0.16.4/contrib/auto-render.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  renderMathInElement(document.body, {
+    delimiters: [
+      { left: '$$', right: '$$', display: true },
+      { left: '$', right: '$', display: false },
+      { left: '\\(', right: '\\)', display: false },
+      { left: '\\[', right: '\\]', display: true },
+    ],
+    globalGroup: true,
+    throwOnError: false
+  });
+});
+</script>
+
+
+
+
+  <script
+  crossorigin="anonymous"
+  src="https://lib.baomitu.com/prism/1.29.0/prism.min.js"></script>
+<script
+  crossorigin="anonymous"
+  src="https://lib.baomitu.com/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+
+
+
+<script>
+let themeSwitch = document.getElementById("theme-switcher");
+var icon = themeSwitch.children[0];
+let currentPref = localStorage.getItem('pref-theme') || 'auto';
+let html = document.documentElement;
+let windowPref = window.matchMedia('(prefers-color-scheme: dark)');
+function isCurrentDark() {
+  let isDark = false;
+  if (currentPref === 'light') {
+    isDark = false;
+  } else if (currentPref === 'dark') {
+    isDark = true;
+  } else {
+    isDark = windowPref.matches;
+  }
+  return isDark;
+}
+let reloadTheme = () => {
+  icon.classList.remove('i-carbon-moon');
+  icon.classList.remove('i-carbon-sun');
+  icon.classList.remove('i-carbon-automatic');
+  if (currentPref === 'light') {
+    icon.classList.add('i-carbon-sun');
+  } else if (currentPref === 'dark') {
+    icon.classList.add('i-carbon-moon');
+  } else {
+    icon.classList.add('i-carbon-automatic');
+  }
+  if (isCurrentDark()) {
+    html.classList.add('dark');
+  } else {
+    html.classList.remove('dark');
+  }
+  
+    changeGiscusTheme(isCurrentDark() ? 'dark' : 'light');
+  
+};
+themeSwitch.addEventListener("click", () => {
+  icon.classList.remove('i-carbon-moon');
+  icon.classList.remove('i-carbon-sun');
+  icon.classList.remove('i-carbon-automatic');
+  if (currentPref === 'auto') {
+    currentPref = 'dark';
+    icon.classList.add('i-carbon-moon');
+  } else if (currentPref === 'dark') {
+    currentPref = 'light';
+    icon.classList.add('i-carbon-sun');
+  } else {
+    currentPref = 'auto';
+    icon.classList.add('i-carbon-automatic');
+  }
+  localStorage.setItem("pref-theme", currentPref);
+  reloadTheme();
+});
+reloadTheme();
+</script>
+
+
+  </div>
+</body>
+
+</html>
