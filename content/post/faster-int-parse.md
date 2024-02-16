@@ -5,6 +5,7 @@ date: "2024-02-16"
 description: "学习性能分析的小作业。"
 ---
 
+代码仓库：[github/bench-int-parse](https://github.com/rogeryoungh/bench-int-parse/tree/main)。
 
 > 学习性能分析的小作业。
 
@@ -221,6 +222,8 @@ inline u64 pre_16_getu(const char *&p) {
 总之，我选择 `pre-16` 作为最终实现。
 
 ## 后记
+
+代码仓库：[github/bench-int-parse](https://github.com/rogeryoungh/bench-int-parse/tree/main)。
 
 某天对 NTT 日常卡常时，突然怀疑起读入的效率。为此查了几篇资料，终有此文。
 
