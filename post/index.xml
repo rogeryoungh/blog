@@ -14,7 +14,8 @@
       <pubDate>Fri, 16 Feb 2024 00:00:00 +0000</pubDate>
       
       <guid>https://acm.rogery.dev/post/faster-int-parse/</guid>
-      <description>学习性能分析的小作业。
+      <description>代码仓库：github/bench-int-parse。
+学习性能分析的小作业。
 即 OIer/ACMer 常说的快读。本文测试了一种另类且易于实现的快读，结果表明快 50% 左右。
 在开始之前，我对问题做以下约束：
 输入是类似 0 123\n456 123456789 的字符串，仅包含 ascii 字符 数字的范围是 $[0, 10^{18}]$ ，不考虑 u64 边界 实际中一般只有单个间隔符，但也要能够正确处理多个间隔符 在 O2 或者 O3 优化等级下进行测试 依据输入的性质，特化两种算法： 严格：输入是 ascii 字符 非严格（TODO）：仅有数字字符的值大于 0x30 接下来我将做几种实现，并使用 nanobench 库来进行性能测试。
