@@ -1,0 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@200..900&display=swap');
+
+@font-face {
+	font-family: 'Maple Mono';
+	font-style: normal;
+	font-weight: 400;
+	src:
+		local('Maple Mono'),
+		url('https://fastly.jsdelivr.net/gh/subframe7536/maple-font/woff2/MapleMono-Regular.woff2'),
+}

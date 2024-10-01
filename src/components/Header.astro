@@ -3,54 +3,22 @@ import HeaderLink from './HeaderLink.astro';
 import { SITE_TITLE } from '../consts';
 ---
 
-<header>
-	<nav>
-		<h2><a href="/">{SITE_TITLE}</a></h2>
-		<div class="internal-links">
-			<HeaderLink href="/">Home</HeaderLink>
-			<HeaderLink href="/post">Post</HeaderLink>
-			<HeaderLink href="/about">About</HeaderLink>
+<header class="shadow print:hidden">
+	<nav class="max-w-6xl mx-auto">
+		<div class="flex items-center justify-between ">
+			<div class="pl-2 flex items-center space-x-4">
+				<img
+					src="https://files.rogery.dev/me/icon-128.png"
+					alt="Roger's avatar"
+					class="w-12 h-12 rounded-full border-solid border-2 border-stone-300 transition transition-duration-500 hover:transform-rotate-720"
+				/>
+				<a class="decoration-none color-base color-initial font-bold" href="/">{SITE_TITLE}</a>
+			</div>
+			<div class="">
+				<HeaderLink href="/">Home</HeaderLink>
+				<HeaderLink href="/post">Post</HeaderLink>
+				<HeaderLink href="/about">About</HeaderLink>
+			</div>
 		</div>
 	</nav>
 </header>
-<style>
-	header {
-		margin: 0;
-		padding: 0 1em;
-		background: white;
-		box-shadow: 0 2px 8px rgba(var(--black), 5%);
-	}
-	h2 {
-		margin: 0;
-		font-size: 1em;
-	}
-
-	h2 a,
-	h2 a.active {
-		text-decoration: none;
-	}
-	nav {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-	}
-	nav a {
-		padding: 1em 0.5em;
-		color: var(--black);
-		border-bottom: 4px solid transparent;
-		text-decoration: none;
-	}
-	nav a.active {
-		text-decoration: none;
-		border-bottom-color: var(--accent);
-	}
-	.social-links,
-	.social-links a {
-		display: flex;
-	}
-	@media (max-width: 720px) {
-		.social-links {
-			display: none;
-		}
-	}
-</style>

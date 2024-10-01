@@ -1,3 +1,5 @@
+@import "./webfonts.css";
+
 /*
   The CSS in this style tag is based off of Bear Blog's default CSS.
   https://github.com/HermanMartinus/bearblog/blob/297026a877bc2ab2b3bdfbd6b9f7961c350917dd/templates/styles/blog/default.css
@@ -5,8 +7,8 @@
  */
 
 :root {
-	--accent: #2337ff;
-	--accent-dark: #000d8a;
+	--accent: #a80000;
+	--accent-dark: #a80000;
 	--black: 15, 18, 25;
 	--gray: 96, 115, 159;
 	--gray-light: 229, 233, 240;
@@ -16,7 +18,7 @@
 		0 16px 32px rgba(var(--gray), 33%);
 }
 body {
-	font-family: 'Noto Serif SC','Noto Serif CJK SC', SimSum, serif;
+	--at-apply: font-serif;
 	margin: 0;
 	padding: 0;
 	text-align: left;
@@ -66,9 +68,6 @@ b {
 a {
 	color: var(--accent);
 }
-a:hover {
-	color: var(--accent);
-}
 p {
 	margin-bottom: 1em;
 }
@@ -100,6 +99,7 @@ pre {
 	border-radius: 8px;
 }
 pre > code {
+	--at-apply: font-mono;
 	all: unset;
 }
 blockquote {
