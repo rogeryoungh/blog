@@ -18,13 +18,9 @@ const posts = (await getCollection("post")).sort(
 			<ul>
 				{
 					posts.map((post: any) => (
-						<li>
-							<a href={`/post/${post.slug}/`}>
-								<span>{post.data.title}</span>
-								<span>
-									<FormattedDate date={post.data.pubDate} />
-								</span>
-							</a>
+						<li class="flex justify-between px-8 py-3 transition hover:bg-stone-200">
+							<a href={ `/post/${post.slug}/` } class="decoration-none text-primary"> { post.data.title }</a>
+							<span class="text-secondary"><FormattedDate date={post.data.pubDate} format='MM-DD' /></span>
 						</li>
 					))
 				}
