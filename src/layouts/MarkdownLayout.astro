@@ -1,6 +1,5 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
-import Comment from "../components/Comment.astro";
 
 import "../styles/markdown.css";
 import "../styles/katex.css";
@@ -17,7 +16,6 @@ const { title, description } = Astro.props;
 	<article class="px-4 my-20">
 		<div class="article mx-auto">
 			<slot />
-			<Comment />
 		</div>
 	</article>
 </BaseLayout>

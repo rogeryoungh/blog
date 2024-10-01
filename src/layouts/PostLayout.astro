@@ -2,6 +2,7 @@
 import type { CollectionEntry } from "astro:content";
 import MarkdownLayout from "./MarkdownLayout.astro";
 import FormattedDate from "../components/FormattedDate.astro";
+import Comment from "../components/Comment.astro";
 
 import "../styles/markdown.css";
 import "../styles/katex.css";
@@ -17,4 +18,5 @@ const { title, description, pubDate, updatedDate } = Astro.props;
 		<FormattedDate date={pubDate} format='YYYY 年 MM 月 DD 日' />
 	</div>
 	<slot />
+	<Comment />
 </MarkdownLayout>
