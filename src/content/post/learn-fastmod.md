@@ -1,7 +1,6 @@
 ---
-author: "rogeryoungh"
 title: "优化取模的几种方法"
-date: "2023-02-07"
+pubDate: "2023-02-07"
 description: "好快。"
 ---
 

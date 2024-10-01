@@ -1,7 +1,6 @@
 ---
-author: "rogeryoungh"
 title: "快读优化：无符号整数解析的几种 trick"
-date: "2024-02-16"
+pubDate: "2024-02-16"
 description: "学习性能分析的小作业。"
 ---
 

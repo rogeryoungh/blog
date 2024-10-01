@@ -1,7 +1,7 @@
 ---
 author: "rogeryoungh"
 title: "满二叉树的非递归 DFS 序遍历"
-date: "2024-01-12"
+pubDate: "2024-01-12"
 description: "神奇的位运算"
 ---
 

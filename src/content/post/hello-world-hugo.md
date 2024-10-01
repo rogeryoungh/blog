@@ -1,7 +1,6 @@
 ---
-author: "rogeryoungh"
 title: "迁移博客到 Hugo"
-date: "2021-06-09"
+pubDate: "2021-06-09"
 description: "迁移博客到 Hugo。"
 ---
 

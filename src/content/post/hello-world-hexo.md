@@ -1,7 +1,6 @@
 ---
-author: "rogeryoungh"
 title: "Hexo 搭建记录"
-date: "2021-02-02"
+pubDate: "2021-02-02"
 description: "已转 Hugo。"
 ---
 
