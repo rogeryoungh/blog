@@ -1,6 +1,5 @@
 ---
 import Layout from "../../layouts/BaseLayout.astro";
-import { SITE_TITLE, SITE_DESCRIPTION } from "../../consts";
 import { getCollection } from "astro:content";
 import FormattedDate from "../../components/FormattedDate.astro";
 
@@ -10,7 +9,7 @@ const posts = (await getCollection("post")).sort(
 ---
 
 <Layout title="目录">
-	<article class="px-4 my-20">
+	<article class="my-20">
 		<div class="mx-auto max-w-3xl">
 			<div class="text-center my-10">
 				<h1>目录</h1>
@@ -18,9 +17,9 @@ const posts = (await getCollection("post")).sort(
 			<ul>
 				{
 					posts.map((post: any) => (
-						<li class="flex justify-between px-8 py-3 transition hover:bg-stone-200">
+						<li class="flex justify-between px-2 sm:px-8 py-3 transition hover:bg-stone-200">
 							<a href={ `/post/${post.slug}/` } class="decoration-none text-primary"> { post.data.title }</a>
-							<span class="text-secondary"><FormattedDate date={post.data.pubDate} format='YYYY-MM-DD' /></span>
+							<span class="text-secondary text-nowrap"><FormattedDate date={post.data.pubDate} format='YYYY-MM-DD' /></span>
 						</li>
 					))
 				}
