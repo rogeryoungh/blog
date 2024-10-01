@@ -1,6 +1,0 @@
-@import "./reset.css";
-@import "./webfonts.css";
-
-body {
-	--at-apply: font-serif;
-}
