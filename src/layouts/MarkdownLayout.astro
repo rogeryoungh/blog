@@ -1,0 +1,21 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+
+import "../styles/markdown.css";
+import "../styles/katex.css";
+
+interface Props {
+	title?: string;
+	description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+	<article class="px-4 my-20">
+		<div class="article mx-auto">
+			<slot />
+		</div>
+	</article>
+</BaseLayout>

@@ -1,0 +1,172 @@
+.article {
+  --at-apply: max-w-3xl;
+
+  p {
+    --at-apply: text-justify my-6 text-4;
+  }
+
+  /* Make links red */
+  a,
+  a:visited {
+    --at-apply: decoration-none break-anywhere text-link;
+  }
+
+  a:hover {
+    --at-apply: underline;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    --at-apply: font-bold;
+  }
+
+  /* Heading typography */
+  h1 {
+    --at-apply: text-8 my-8;
+  }
+
+  h2 {
+    --at-apply: text-7 my-7;
+  }
+
+  h3 {
+    --at-apply: text-6 my-6;
+  }
+
+  h4 {
+    --at-apply: text-5 my-6;
+  }
+
+  h5 {
+    --at-apply: text-4 my-6;
+  }
+
+  .katex-display {
+    --at-apply: overflow-x-auto overflow-y-hidden;
+  }
+
+  /* Make images easier to work with */
+  img {
+    --at-apply: max-w-full h-auto block;
+  }
+
+  ol,
+  ul {
+    --at-apply: pl-8 list-disc;
+  }
+
+  /* Inherit fonts for inputs and buttons */
+  input,
+  button,
+  textarea,
+  select {
+    --at-apply: font-inherit;
+  }
+
+  /* Prevent textarea from overflowing */
+  textarea {
+    --at-apply: w-full;
+  }
+
+  /* Styles for inline code or code snippets */
+  code,
+  pre,
+  kbd {
+    --at-apply: font-mono;
+  }
+
+  /* Better tables */
+  table {
+    --at-apply: w-auto mx-auto;
+    --at-apply: border-collapse;
+    --at-apply: overflow-x-scroll;
+    counter-increment: caption;
+  }
+
+  img {
+    --at-apply: w-full h-auto;
+  }
+
+  /* add bottom border on column table headings  */
+  /* table tr>th[scope='col'] {
+    --at-apply: border-b-1.36 border-base border-solid;
+  } */
+
+  table>thead {
+    --at-apply: border-solid border-[#000] border-x-none border-t-2.27 border-b-1.8;
+  }
+
+  table>tbody {
+    --at-apply: border-solid border-[#000] border-x-none border-t-none border-b-2.27;
+  }
+
+  th,
+  td {
+    --at-apply: px-4 py-1;
+  }
+
+  /* Table caption */
+  caption {
+    text-align: left;
+    font-size: 0.923em;
+    /* border-bottom: 2pt solid #000; */
+    padding: 0 0.25em 0.25em;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  caption::before {
+    content: 'Table ' counter(caption) '. ';
+    font-weight: bold;
+  }
+
+  blockquote {
+    --at-apply: my-6;
+    --at-apply: py-1;
+    --at-apply: px-5;
+    background-color: var(--hover-background);
+    border-inline-start: 5px solid var(--primary-color);
+  }
+
+  /* allow scroll on the x-axis */
+  .scroll-wrapper {
+    overflow-x: auto;
+  }
+
+  /* if a table is wrapped in a scroll wrapper,
+	the table cells shouldn't wrap */
+  .scroll-wrapper>table td {
+    white-space: nowrap;
+  }
+
+  /* Nested ordered list for ToC */
+  nav ol {
+    counter-reset: item;
+  }
+
+  nav li {
+    display: block;
+  }
+
+  nav li:before {
+    content: counters(item, '.') ' ';
+    counter-increment: item;
+    padding-right: 0.85rem;
+    font-weight: inherit;
+    color: var(--link-visited);
+  }
+
+  /* Center definitions (most useful for display equations) */
+  dl dd {
+    text-align: center;
+  }
+
+  pre {
+    --at-apply: border-solid border-2 border-[#000] p-4 my-4;
+  }
+  code {
+    --at-apply: text-size-3.5;
+  }
+}

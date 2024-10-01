@@ -11,8 +11,13 @@ export default defineConfig({
 	],
 	transformers: [transformerDirectives()],
 	theme: {
+		colors: {
+			primary: '#000',
+			secondary: '#555',
+			link: '#a80000'
+		},
 		fontFamily: {
-			serif: 'Noto CJK SC, Source Han Serif CN, 思源宋体 CN, Noto Serif SC, Simsun, serif',
+			serif: 'Noto Serif CJK SC, Source Han Serif CN, 思源宋体 CN, Noto Serif SC, Simsun, serif',
 			mono: 'Maple Mono, Jetbrains Mono',
 			emoji: 'Apple Color Emoji, Noto Color Emoji'
 		}

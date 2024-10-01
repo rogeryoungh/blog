@@ -1,25 +1,18 @@
 ---
-import BaseHead from '../components/BaseHead.astro';
-import Header from '../components/Header.astro';
-import Footer from '../components/Footer.astro';
-import { SITE_TITLE, SITE_DESCRIPTION } from '../consts';
+import Layout from '../layouts/MarkdownLayout.astro';
+import '../styles/markdown.css'
 ---
 
-<!doctype html>
-<html lang="en">
-	<head>
-		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
-	</head>
-	<body>
-		<Header />
-		<main>
-			<h2>Hi,</h2>
-			<p> 我是 Roger Young，喜欢数学和编程。</p>
-			<ul>
-				<li><a href="/post">My posts.</a></li>
-				<li><a href="/about">About me.</a></li>
-			</ul>
-		</main>
-		<Footer />
-	</body>
-</html>
+<Layout>
+	<h1>Hi,</h1>
+	<p>
+		我是 Roger Young，喜欢数学和编程。
+	</p>
+	<p>
+		🚧博客正在改版中，可能会有奇奇怪怪的问题。
+	</p>
+	<ul>
+		<li><a href="/post">My articles</a>.</li>
+		<li><a href="/about">About me</a>.</li>
+	</ul>
+</Layout>

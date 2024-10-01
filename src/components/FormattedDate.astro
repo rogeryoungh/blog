@@ -1,17 +1,14 @@
 ---
+import moment from 'moment';
+
 interface Props {
 	date: Date;
+	format?: string;
 }
 
-const { date } = Astro.props;
+const { date, format = "YYYY-MM-DD", ...props } = Astro.props;
 ---
 
-<time datetime={date.toISOString()}>
-	{
-		date.toLocaleDateString('en-us', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-		})
-	}
+<time datetime={date.toISOString()} {...props}>
+	{ moment(date).format(format) }
 </time>

@@ -1,0 +1,20 @@
+---
+import type { CollectionEntry } from "astro:content";
+import MarkdownLayout from "./MarkdownLayout.astro";
+import FormattedDate from "../components/FormattedDate.astro";
+
+import "../styles/markdown.css";
+import "../styles/katex.css";
+
+type Props = CollectionEntry<"post">["data"];
+
+const { title, description, pubDate, updatedDate } = Astro.props;
+---
+
+<MarkdownLayout title={title} description={description}>
+	<div class="text-center my-10">
+		<h1>{title}</h1>
+		<FormattedDate date={pubDate} format='YYYY 年 MM 月 DD 日' />
+	</div>
+	<slot />
+</MarkdownLayout>
