@@ -123,11 +123,9 @@
   }
 
   blockquote {
-    --at-apply: my-6;
-    --at-apply: py-1;
-    --at-apply: px-5;
-    background-color: var(--hover-background);
-    border-inline-start: 5px solid var(--primary-color);
+    --at-apply: mx-0 my-6 py-1 px-5;
+    background-color: #eee;
+    border-inline-start: 5px solid #000;
   }
 
   /* allow scroll on the x-axis */

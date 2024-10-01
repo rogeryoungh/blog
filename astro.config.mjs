@@ -12,6 +12,9 @@ export default defineConfig({
 	site: 'https://blog.rogery.dev/',
 	integrations: [mdx(), sitemap(), unocss()],
 	markdown: {
+		shikiConfig: {
+      theme: 'github-light',
+    },
 		rehypePlugins: [rehypeKatex],
 		remarkPlugins: [remarkMath]
 	},
