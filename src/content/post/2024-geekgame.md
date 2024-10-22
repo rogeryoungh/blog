@@ -6,7 +6,7 @@ description: "学习性能分析的小作业。"
 
 GeekGame 的题目质量确实很高，让我这种完全不会 CTF 的人都能体会到其中的乐趣，很有体验！
 
-可惜只差几名就能拿到纪念品了，希望明年能有计划拿。
+可惜只差几名就能拿到纪念品了，希望明年能有机会拿。
 
 - 网站：<https://geekgame.pku.edu.cn>
 - 官方 writeup：<https://github.com/PKU-GeekGame/geekgame-4th>
