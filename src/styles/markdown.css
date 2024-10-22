@@ -2,7 +2,7 @@
   --at-apply: max-w-3xl;
 
   p {
-    --at-apply: text-justify text-4;
+    --at-apply: text-justify my-6 text-4;
   }
 
   /* Make links red */

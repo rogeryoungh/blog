@@ -12,9 +12,9 @@ const { title, description, pubDate, updatedDate } = Astro.props;
 ---
 
 <MarkdownLayout title={title} description={description}>
-	<div class="text-center my-10">
+	<div class="text-center pt-10 pb-20">
 		<h1>{title}</h1>
-		<FormattedDate date={pubDate} format='YYYY 年 MM 月 DD 日' />
+		<FormattedDate date={pubDate} format='YYYY 年 M 月 D 日' />
 	</div>
 	<slot />
 	<Comment />
