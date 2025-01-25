@@ -1,7 +1,7 @@
 ---
 title: "GeekGame 2024 题解"
 pubDate: "2024-10-22"
-description: "学习性能分析的小作业。"
+description: "GeekGame 很有意思！"
 ---
 
 GeekGame 的题目质量确实很高，让我这种完全不会 CTF 的人都能体会到其中的乐趣，很有体验！
