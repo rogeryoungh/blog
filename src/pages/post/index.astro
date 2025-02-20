@@ -3,27 +3,54 @@ import Layout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import FormattedDate from "../../components/FormattedDate.astro";
 
-const posts = (await getCollection("post")).sort(
-	(a: any, b: any) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+const originalPosts = await getCollection('post');
+type PostType = typeof posts[0];
+
+const posts = originalPosts.sort(
+	(a: PostType, b: PostType) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
 );
+
+function splitByYear(posts: PostType[]) {
+  const groupedPosts = new Map<number, PostType[]>();
+	posts.forEach(post => {
+		const year = post.data.pubDate.getFullYear();
+		if (!groupedPosts.has(year)) {
+			groupedPosts.set(year, []);
+		}
+		groupedPosts.get(year)!.push(post);
+	});
+  return groupedPosts;
+}
+
+
+const splitedPosts = splitByYear(posts);
+
 ---
 
 <Layout title="目录">
 	<article class="my-20">
 		<div class="mx-auto max-w-3xl">
-			<div class="text-center my-10">
+			<div class="text-center my-20">
 				<h1>目录</h1>
 			</div>
-			<ul>
-				{
-					posts.map((post: any) => (
-						<li class="flex justify-between px-2 sm:px-8 py-3 transition hover:bg-stone-200">
-							<a href={ `/post/${post.slug}/` } class="decoration-none text-primary"> { post.data.title }</a>
-							<span class="text-secondary text-nowrap"><FormattedDate date={post.data.pubDate} format='YYYY-MM-DD' /></span>
-						</li>
-					))
-				}
-			</ul>
+			{
+				Array.from(splitedPosts).map(([year, posts]) => (
+					<h3 class="text-6 my-6">
+						{year.toString()} 
+						<sup class="text-secondary text-4">{posts.length}</sup>
+					</h3>
+					<ul class="pl-0">
+					{
+						posts.map((post) => (
+							<li class="flex justify-between px-2 sm:px-8 py-3 transition hover:bg-stone-200">
+								<a href={ `/post/${post.slug}/` } class="decoration-none text-primary"> { post.data.title }</a>
+								<span class="text-secondary text-nowrap"><FormattedDate date={post.data.pubDate} format='MM-DD' /></span>
+							</li>
+						))
+					}
+					</ul>
+				))
+			}
 		</div>
 	</article>
 </Layout>
