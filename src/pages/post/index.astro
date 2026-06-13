@@ -3,8 +3,10 @@ import Layout from "../../layouts/BaseLayout.astro";
 import { getCollection } from "astro:content";
 import FormattedDate from "../../components/FormattedDate.astro";
 
+import type { CollectionEntry } from "astro:content";
+
 const originalPosts = await getCollection('post');
-type PostType = typeof posts[0];
+type PostType = CollectionEntry<'post'>;
 
 const posts = originalPosts.sort(
 	(a: PostType, b: PostType) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
@@ -43,7 +45,7 @@ const splitedPosts = splitByYear(posts);
 					{
 						posts.map((post) => (
 							<li class="flex justify-between px-2 sm:px-8 py-3 transition hover:bg-stone-200">
-								<a href={ `/post/${post.slug}/` } class="decoration-none text-primary"> { post.data.title }</a>
+								<a href={ `/post/${post.id}/` } class="decoration-none text-primary"> { post.data.title }</a>
 								<span class="text-secondary text-nowrap"><FormattedDate date={post.data.pubDate} format='MM-DD' /></span>
 							</li>
 						))

@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import { unified } from '@astrojs/markdown-remark';
 import mdx from '@astrojs/mdx';
 import unocss from 'unocss/astro'
 
@@ -12,11 +13,13 @@ export default defineConfig({
 	site: 'https://blog.rogery.dev/',
 	integrations: [mdx(), sitemap(), unocss()],
 	markdown: {
+		processor: unified({
+			rehypePlugins: [rehypeKatex],
+			remarkPlugins: [remarkMath],
+		}),
 		shikiConfig: {
       theme: 'github-light',
     },
-		rehypePlugins: [rehypeKatex],
-		remarkPlugins: [remarkMath]
 	},
 	devToolbar: {
 		enabled: false

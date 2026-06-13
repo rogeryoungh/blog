@@ -8,7 +8,7 @@ import "../styles/markdown.css";
 
 type Props = CollectionEntry<"post">["data"];
 
-const { title, description, pubDate, updatedDate } = Astro.props;
+const { title, description, pubDate } = Astro.props;
 ---
 
 <MarkdownLayout title={title} description={description}>
