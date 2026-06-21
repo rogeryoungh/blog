@@ -1,3 +1,14 @@
+---
+import { defaultLocale, type Locale } from "../i18n";
+
+interface Props {
+  locale?: Locale;
+}
+
+const { locale = defaultLocale } = Astro.props;
+const giscusLang = locale === "zh" ? "zh-CN" : "en";
+---
+
 <section class="mx-auto mt-12">
   <script
     is:inline
@@ -12,7 +23,7 @@
     data-emit-metadata="0"
     data-input-position="bottom"
     data-theme="light"
-    data-lang="zh-CN"
+    data-lang={giscusLang}
     data-loading="lazy"
     crossorigin="anonymous"
     async

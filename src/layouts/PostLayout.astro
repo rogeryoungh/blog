@@ -19,5 +19,5 @@ const { title, description, pubDate, locale, alternateUrls } = Astro.props;
 		<FormattedDate date={pubDate} format='YYYY 年 M 月 D 日' />
 	</div>
 	<slot />
-	<Comment />
+	<Comment locale={locale} />
 </MarkdownLayout>
