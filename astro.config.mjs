@@ -1,5 +1,5 @@
 // @ts-check
-import { readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { defineConfig } from 'astro/config';
 import { unified } from '@astrojs/markdown-remark';
 import mdx from '@astrojs/mdx';
@@ -9,15 +9,36 @@ import sitemap from '@astrojs/sitemap';
 import rehypeKatex from 'rehype-katex';
 import remarkMath from 'remark-math';
 
-const zhPostDir = new URL('./src/content/post/zh/', import.meta.url);
-const postRedirects = Object.fromEntries(
-	readdirSync(zhPostDir, { recursive: true })
+const postLocales = ['zh', 'en'];
+
+/**
+ * @param {string} locale
+ */
+function getPostRedirectEntries(locale) {
+	const postDir = new URL(`./src/content/post/${locale}/`, import.meta.url);
+	return readdirSync(postDir, { recursive: true })
 		.filter((file) => typeof file === 'string')
 		.filter((file) => file.endsWith('.md'))
 		.flatMap((file) => {
 			const slug = file.replace(/\.md$/, '');
-			return [[`/post/${slug}`, `/zh/post/${slug}`]];
-		}),
+			const content = readFileSync(new URL(file, postDir), 'utf8');
+			const year = content.match(/pubDate:\s*["']?(\d{4})/)?.[1];
+			if (!year) {
+				throw new Error(`Missing pubDate year in ${locale}/${file}`);
+			}
+			const legacySlug = slug.startsWith(`${year}/`) ? slug.slice(year.length + 1) : slug;
+			const localizedOldPath = `/${locale}/post/${legacySlug}`;
+			const localizedNewPath = `/${locale}/post/${slug}`;
+			const entries = [[localizedOldPath, localizedNewPath]];
+			if (locale === 'zh') {
+				entries.push([`/post/${legacySlug}`, localizedNewPath]);
+			}
+			return entries;
+		});
+}
+
+const postRedirects = Object.fromEntries(
+	postLocales.flatMap(getPostRedirectEntries),
 );
 
 // https://astro.build/config

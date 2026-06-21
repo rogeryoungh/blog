@@ -25,7 +25,7 @@ const alternateUrls = locales
 		const info = getPostInfo(item);
 		return {
 			locale: localeMeta[info.locale].htmlLang,
-			href: getLocalizedPostPath(info.locale, info.slug),
+			href: getLocalizedPostPath(info.locale, item),
 		};
 	});
 const { Content } = await render(post);

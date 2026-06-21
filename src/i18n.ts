@@ -56,8 +56,8 @@ export function getPostInfo(post: CollectionEntry<"post">) {
 	};
 }
 
-export function getLocalizedPostPath(locale: Locale, slug: string) {
-	return getLocalePath(locale, `post/${slug}`);
+export function getLocalizedPostPath(locale: Locale, post: CollectionEntry<"post">) {
+	return getLocalePath(locale, `post/${getPostSlug(post)}`);
 }
 
 export function getPostsByLocale(posts: CollectionEntry<"post">[], locale: Locale) {
@@ -68,14 +68,18 @@ export function getPostSlug(post: CollectionEntry<"post">) {
 	return getPostInfo(post).slug;
 }
 
+export function getPostTranslationKey(post: CollectionEntry<"post">) {
+	return getPostSlug(post).split("/").at(-1) ?? getPostSlug(post);
+}
+
 export function findPostTranslation(
 	posts: CollectionEntry<"post">[],
 	post: CollectionEntry<"post">,
 	locale: Locale,
 ) {
-	const slug = getPostSlug(post);
+	const slug = getPostTranslationKey(post);
 	return posts.find((item) => {
 		const info = getPostInfo(item);
-		return info.locale === locale && info.slug === slug;
+		return info.locale === locale && getPostTranslationKey(item) === slug;
 	});
 }

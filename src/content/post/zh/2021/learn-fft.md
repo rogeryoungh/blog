@@ -498,7 +498,7 @@ $$
 
 这个图并不好理解，下面那张 Original FFT 更容易理解，但是现在广为流传的算法是 Twisted FFT。
 
-![](../../img/fft-twisted.png)
+![](../../../img/fft-twisted.png)
 
 通过图可以看出，FFT 的过程即是先把多项式从根推到叶子，即求得所有单位根处的值，做完操作后，再从叶子推回根。
 
@@ -506,7 +506,7 @@ $$
 
 当然，我们可以直接分治，便是 Original FFT。
 
-![](../../img/fft-original.png)
+![](../../../img/fft-original.png)
 
 由于篇幅有限，本文不展开。
 

@@ -1,7 +1,7 @@
 import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 import { SITE_TITLE, SITE_DESCRIPTION } from '../../consts';
-import { getLocale, getLocalizedPostPath, getPostSlug, getPostsByLocale, locales } from '../../i18n';
+import { getLocale, getLocalizedPostPath, getPostsByLocale, locales } from '../../i18n';
 
 export function getStaticPaths() {
 	return locales.map((locale) => ({ params: { locale } }));
@@ -16,7 +16,7 @@ export async function GET(context: any) {
 		site: context.site,
 		items: posts.map((post) => ({
 			...post.data,
-			link: getLocalizedPostPath(locale, getPostSlug(post)),
+			link: getLocalizedPostPath(locale, post),
 		})),
 	});
 }
