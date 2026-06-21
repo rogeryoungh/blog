@@ -1,0 +1,46 @@
+/ /zh/ 301
+/about /zh/about/ 301
+/about/ /zh/about/ 301
+/post /zh/post/ 301
+/post/ /zh/post/ 301
+/rss.xml /zh/rss.xml 301
+
+/post/hello-world-hexo /zh/post/2021/hello-world-hexo/ 301
+/post/hello-world-hexo/ /zh/post/2021/hello-world-hexo/ 301
+/zh/post/hello-world-hexo /zh/post/2021/hello-world-hexo/ 301
+/zh/post/hello-world-hexo/ /zh/post/2021/hello-world-hexo/ 301
+
+/post/hello-world-hugo /zh/post/2021/hello-world-hugo/ 301
+/post/hello-world-hugo/ /zh/post/2021/hello-world-hugo/ 301
+/zh/post/hello-world-hugo /zh/post/2021/hello-world-hugo/ 301
+/zh/post/hello-world-hugo/ /zh/post/2021/hello-world-hugo/ 301
+
+/post/learn-fft /zh/post/2021/learn-fft/ 301
+/post/learn-fft/ /zh/post/2021/learn-fft/ 301
+/zh/post/learn-fft /zh/post/2021/learn-fft/ 301
+/zh/post/learn-fft/ /zh/post/2021/learn-fft/ 301
+
+/post/poly-newton /zh/post/2022/poly-newton/ 301
+/post/poly-newton/ /zh/post/2022/poly-newton/ 301
+/zh/post/poly-newton /zh/post/2022/poly-newton/ 301
+/zh/post/poly-newton/ /zh/post/2022/poly-newton/ 301
+
+/post/learn-fastmod /zh/post/2023/learn-fastmod/ 301
+/post/learn-fastmod/ /zh/post/2023/learn-fastmod/ 301
+/zh/post/learn-fastmod /zh/post/2023/learn-fastmod/ 301
+/zh/post/learn-fastmod/ /zh/post/2023/learn-fastmod/ 301
+
+/post/2024-geekgame /zh/post/2024/2024-geekgame/ 301
+/post/2024-geekgame/ /zh/post/2024/2024-geekgame/ 301
+/zh/post/2024-geekgame /zh/post/2024/2024-geekgame/ 301
+/zh/post/2024-geekgame/ /zh/post/2024/2024-geekgame/ 301
+
+/post/faster-int-parse /zh/post/2024/faster-int-parse/ 301
+/post/faster-int-parse/ /zh/post/2024/faster-int-parse/ 301
+/zh/post/faster-int-parse /zh/post/2024/faster-int-parse/ 301
+/zh/post/faster-int-parse/ /zh/post/2024/faster-int-parse/ 301
+
+/post/norec-dfs /zh/post/2024/norec-dfs/ 301
+/post/norec-dfs/ /zh/post/2024/norec-dfs/ 301
+/zh/post/norec-dfs /zh/post/2024/norec-dfs/ 301
+/zh/post/norec-dfs/ /zh/post/2024/norec-dfs/ 301

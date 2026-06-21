@@ -41,6 +41,13 @@ const postRedirects = Object.fromEntries(
 	postLocales.flatMap(getPostRedirectEntries),
 );
 
+const redirects = {
+	'/about': '/zh/about',
+	'/post': '/zh/post',
+	'/rss.xml': '/zh/rss.xml',
+	...postRedirects,
+};
+
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://blog.rogery.dev/',
@@ -51,12 +58,7 @@ export default defineConfig({
 			prefixDefaultLocale: true,
 		},
 	},
-	redirects: {
-		'/about': '/zh/about',
-		'/post': '/zh/post',
-		'/rss.xml': '/zh/rss.xml',
-		...postRedirects,
-	},
+	redirects,
 	integrations: [mdx(), sitemap(), unocss()],
 	markdown: {
 		processor: unified({
