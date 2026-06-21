@@ -1,0 +1,4 @@
+interface:
+  display_name: "Translate Blog Post"
+  short_description: "Translate bilingual blog markdown posts"
+  default_prompt: "Use $translate-blog-post to translate this blog post into the matching language version."
