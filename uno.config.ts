@@ -1,6 +1,10 @@
 import { defineConfig, presetIcons, presetWind3, transformerDirectives } from 'unocss'
 
 export default defineConfig({
+	safelist: [
+		'i-ph-moon',
+		'i-ph-sun',
+	],
 	shortcuts: {
 		'bg-base': 'bg-white dark:bg-black',
 		'color-base': 'text-black dark:text-white',

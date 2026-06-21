@@ -47,20 +47,20 @@ const splitedPosts = splitByYear(posts);
 			<div class="text-center my-20">
 				<h1>{t.archiveTitle}</h1>
 			</div>
-			{posts.length === 0 && <p class="text-center text-secondary">{t.noArticles}</p>}
+			{posts.length === 0 && <p class="text-center post-muted">{t.noArticles}</p>}
 			{
 				Array.from(splitedPosts).map(([year, posts]) => (
 					<>
 						<h3 class="text-6 my-6">
 							{year.toString()}
-							<sup class="text-secondary text-4">{posts.length}</sup>
+							<sup class="post-muted text-4">{posts.length}</sup>
 						</h3>
 						<ul class="pl-0">
 							{
 								posts.map((post) => (
-									<li class="flex justify-between px-2 sm:px-8 py-3 transition hover:bg-stone-200">
-										<a href={getLocalizedPostPath(locale, post)} class="decoration-none text-primary">{post.data.title}</a>
-										<span class="text-secondary text-nowrap"><FormattedDate date={post.data.pubDate} format='MM-DD' /></span>
+									<li class="post-item flex justify-between px-2 sm:px-8 py-3 transition">
+										<a href={getLocalizedPostPath(locale, post)} class="decoration-none">{post.data.title}</a>
+										<span class="post-muted text-nowrap"><FormattedDate date={post.data.pubDate} format='MM-DD' /></span>
 									</li>
 								))
 							}
@@ -71,3 +71,13 @@ const splitedPosts = splitByYear(posts);
 		</div>
 	</article>
 </Layout>
+
+<style>
+	.post-muted {
+		color: var(--muted);
+	}
+
+	.post-item:hover {
+		background: var(--surface-hover);
+	}
+</style>

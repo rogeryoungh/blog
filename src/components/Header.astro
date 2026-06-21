@@ -23,7 +23,7 @@ const switchUrl = Astro.props.alternateUrls?.find((item) => item.locale === loca
 					alt="Roger's avatar"
 					class="w-12 h-12 rounded-full border-solid border-2 border-stone-300 transition transition-duration-500 hover:transform-rotate-720"
 				/>
-				<a class="decoration-none color-base color-initial font-bold" href={getLocalePath(locale)}>{SITE_TITLE}</a>
+				<a class="decoration-none font-bold" href={getLocalePath(locale)}>{SITE_TITLE}</a>
 			</div>
 			<nav class="hidden sm:block">
 				<ul>
@@ -31,18 +31,24 @@ const switchUrl = Astro.props.alternateUrls?.find((item) => item.locale === loca
 					<HeaderLink href={getLocalePath(locale, 'post')}>{t.articles}</HeaderLink>
 					<HeaderLink href={getLocalePath(locale, 'about')}>{t.about}</HeaderLink>
 					{switchUrl && <HeaderLink href={switchUrl}>{localeMeta[otherLocale].label}</HeaderLink>}
+					<button class="theme-toggle" type="button" aria-label="Toggle dark mode">
+						<span class="theme-toggle-icon i-ph-moon"></span>
+					</button>
 				</ul>
 			</nav>
 			<details class="relative sm:hidden">
-				<summary class="p-4 text-6 justify-center hover:bg-stone-200 inline-flex items-center cursor-pointer list-none" aria-label="Menu">
+				<summary class="p-4 text-6 justify-center inline-flex items-center cursor-pointer list-none" aria-label="Menu">
 					<span class="i-ph-list"></span>
 				</summary>
-				<nav class="absolute right-0 top-full z-10 min-w-36 bg-white shadow">
+				<nav class="absolute right-0 top-full z-10 min-w-36 shadow mobile-menu">
 					<ul class="flex flex-col">
 						<HeaderLink href={getLocalePath(locale)}>{t.home}</HeaderLink>
 						<HeaderLink href={getLocalePath(locale, 'post')}>{t.articles}</HeaderLink>
 						<HeaderLink href={getLocalePath(locale, 'about')}>{t.about}</HeaderLink>
 						{switchUrl && <HeaderLink href={switchUrl}>{localeMeta[otherLocale].label}</HeaderLink>}
+						<button class="theme-toggle mobile-theme-toggle" type="button" aria-label="Toggle dark mode">
+							<span class="theme-toggle-icon i-ph-moon"></span>
+						</button>
 					</ul>
 				</nav>
 			</details>
@@ -50,8 +56,83 @@ const switchUrl = Astro.props.alternateUrls?.find((item) => item.locale === loca
 	</nav>
 </header>
 
+<script is:inline>
+	(() => {
+		const buttons = document.querySelectorAll('.theme-toggle');
+
+		const updateGiscusTheme = (theme) => {
+			const iframe = document.querySelector('iframe.giscus-frame');
+			iframe?.contentWindow?.postMessage(
+				{ giscus: { setConfig: { theme } } },
+				'https://giscus.app',
+			);
+		};
+
+		const setTheme = (theme, persist = true) => {
+			document.documentElement.classList.toggle('dark', theme === 'dark');
+			if (persist) {
+				try {
+					localStorage.setItem('theme', theme);
+				} catch {}
+			}
+			buttons.forEach((button) => {
+				button.setAttribute('aria-pressed', String(theme === 'dark'));
+				const icon = button.querySelector('.theme-toggle-icon');
+				icon?.classList.toggle('i-ph-sun', theme === 'dark');
+				icon?.classList.toggle('i-ph-moon', theme !== 'dark');
+			});
+			updateGiscusTheme(theme);
+		};
+
+		const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+		let storedTheme;
+		try {
+			storedTheme = localStorage.getItem('theme');
+		} catch {}
+		setTheme(storedTheme ?? currentTheme, false);
+
+		buttons.forEach((button) => {
+			button.addEventListener('click', () => {
+				setTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark');
+			});
+		});
+	})();
+</script>
+
 <style>
+	header {
+		background: var(--surface);
+	}
+
 	summary::-webkit-details-marker {
 		display: none;
+	}
+
+	summary:hover,
+	.theme-toggle:hover {
+		background: var(--surface-hover);
+	}
+
+	.mobile-menu {
+		background: var(--surface);
+	}
+
+	.theme-toggle {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 4rem;
+		min-height: 4rem;
+		color: inherit;
+		cursor: pointer;
+		vertical-align: top;
+	}
+
+	.theme-toggle-icon {
+		font-size: 1.25rem;
+	}
+
+	.mobile-theme-toggle {
+		width: 100%;
 	}
 </style>

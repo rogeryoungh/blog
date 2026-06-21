@@ -74,8 +74,12 @@ export default defineConfig({
 			remarkPlugins: [remarkMath],
 		}),
 		shikiConfig: {
-      theme: 'github-light',
-    },
+			themes: {
+				light: 'github-light',
+				dark: 'github-dark',
+			},
+			defaultColor: false,
+		},
 	},
 	devToolbar: {
 		enabled: false

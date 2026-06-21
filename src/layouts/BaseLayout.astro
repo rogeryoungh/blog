@@ -23,7 +23,7 @@ const { title, description, locale = getLocale(Astro.params.locale), alternateUr
 	<head>
 		<BaseHead title={title} description={description} alternateUrls={alternateUrls} />
 	</head>
-	<body class="flex flex-col font-serif dark:bg-base line-height-normal">
+	<body class="flex flex-col font-serif line-height-normal">
 		<Header locale={locale} alternateUrls={alternateUrls} />
 		<main class="flex-1 px-4">
 			<slot />

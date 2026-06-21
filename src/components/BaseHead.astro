@@ -25,6 +25,17 @@ const pageTitle = title
 <!-- Global Metadata -->
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<script is:inline>
+	(() => {
+		try {
+			const storedTheme = localStorage.getItem('theme');
+			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			document.documentElement.classList.toggle('dark', storedTheme ? storedTheme === 'dark' : prefersDark);
+		} catch {
+			document.documentElement.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches);
+		}
+	})();
+</script>
 <link rel="icon" type="image/svg+xml" href="https://files.rogery.dev/me/icon-128.png" />
 <meta name="generator" content={Astro.generator} />
 

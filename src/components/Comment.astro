@@ -9,23 +9,27 @@ const { locale = defaultLocale } = Astro.props;
 const giscusLang = locale === "zh" ? "zh-CN" : "en";
 ---
 
-<section class="mx-auto mt-12">
-  <script
-    is:inline
-    src="https://giscus.app/client.js"
-    data-repo="rogeryoungh/blog"
-    data-repo-id="MDEwOlJlcG9zaXRvcnkzODQyNDIyNTQ="
-    data-category="Giscus"
-    data-category-id="DIC_kwDOFucSTs4CTTLS"
-    data-mapping="pathname"
-    data-strict="0"
-    data-reactions-enabled="1"
-    data-emit-metadata="0"
-    data-input-position="bottom"
-    data-theme="light"
-    data-lang={giscusLang}
-    data-loading="lazy"
-    crossorigin="anonymous"
-    async
-  ></script>
+<section class="mx-auto mt-12" data-giscus-lang={giscusLang}>
+  <script is:inline>
+    (() => {
+      const container = document.currentScript.parentElement;
+      const script = document.createElement('script');
+      script.src = 'https://giscus.app/client.js';
+      script.dataset.repo = 'rogeryoungh/blog';
+      script.dataset.repoId = 'MDEwOlJlcG9zaXRvcnkzODQyNDIyNTQ=';
+      script.dataset.category = 'Giscus';
+      script.dataset.categoryId = 'DIC_kwDOFucSTs4CTTLS';
+      script.dataset.mapping = 'pathname';
+      script.dataset.strict = '0';
+      script.dataset.reactionsEnabled = '1';
+      script.dataset.emitMetadata = '0';
+      script.dataset.inputPosition = 'bottom';
+      script.dataset.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      script.dataset.lang = container.dataset.giscusLang;
+      script.dataset.loading = 'lazy';
+      script.crossOrigin = 'anonymous';
+      script.async = true;
+      container.append(script);
+    })();
+  </script>
 </section>
