@@ -18,7 +18,7 @@ export default defineConfig({
 			link: '#a80000'
 		},
 		fontFamily: {
-			serif: 'Noto Serif CJK SC, Source Han Serif CN, 思源宋体 CN, Noto Serif SC, Simsun, serif',
+			serif: 'var(--font-noto-serif-sc), Noto Serif CJK SC, Source Han Serif CN, 思源宋体 CN, Noto Serif SC, Simsun, serif',
 			mono: 'Maple Mono, Jetbrains Mono',
 			emoji: 'Apple Color Emoji, Noto Color Emoji'
 		}

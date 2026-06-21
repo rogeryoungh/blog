@@ -1,6 +1,6 @@
 // @ts-check
 import { readdirSync, readFileSync } from 'node:fs';
-import { defineConfig } from 'astro/config';
+import { defineConfig, fontProviders } from 'astro/config';
 import { unified } from '@astrojs/markdown-remark';
 import mdx from '@astrojs/mdx';
 import unocss from 'unocss/astro'
@@ -51,6 +51,14 @@ const redirects = {
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://blog.rogery.dev/',
+	fonts: [{
+		name: 'Noto Serif SC',
+		cssVariable: '--font-noto-serif-sc',
+		provider: fontProviders.google(),
+		weights: ['200 900'],
+		styles: ['normal'],
+		subsets: ['latin', 'chinese-simplified'],
+	}],
 	i18n: {
 		locales: ['zh', 'en'],
 		defaultLocale: 'zh',
