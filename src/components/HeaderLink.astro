@@ -6,8 +6,15 @@ type Props = HTMLAttributes<'a'>;
 const { href, ...props } = Astro.props;
 
 const { pathname } = Astro.url;
-const subpath = pathname.match(/[^\/]+/g);
-const isActive = href === pathname || href === '/' + subpath?.[0];
+const currentPath = pathname.endsWith('/') ? pathname : `${pathname}/`;
+const currentParts = currentPath.match(/[^\/]+/g) ?? [];
+const hrefPath = typeof href === 'string' && href.endsWith('/') ? href : `${href}/`;
+const hrefParts = typeof href === 'string' ? hrefPath.match(/[^\/]+/g) ?? [] : [];
+const isActive = hrefPath === currentPath || (
+	hrefParts.length > 1 &&
+	currentParts[0] === hrefParts[0] &&
+	currentParts[1] === hrefParts[1]
+);
 ---
 
 <a

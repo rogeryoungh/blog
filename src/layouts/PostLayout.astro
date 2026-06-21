@@ -3,15 +3,19 @@ import type { CollectionEntry } from "astro:content";
 import MarkdownLayout from "./MarkdownLayout.astro";
 import FormattedDate from "../components/FormattedDate.astro";
 import Comment from "../components/Comment.astro";
+import type { Locale } from "../i18n";
 
 import "../styles/markdown.css";
 
-type Props = CollectionEntry<"post">["data"];
+type Props = CollectionEntry<"post">["data"] & {
+	locale?: Locale;
+	alternateUrls?: { locale: string; href: string }[];
+};
 
-const { title, description, pubDate } = Astro.props;
+const { title, description, pubDate, locale, alternateUrls } = Astro.props;
 ---
 
-<MarkdownLayout title={title} description={description}>
+<MarkdownLayout title={title} description={description} locale={locale} alternateUrls={alternateUrls}>
 	<div class="text-center pt-10 pb-20">
 		<h1>{title}</h1>
 		<FormattedDate date={pubDate} format='YYYY 年 M 月 D 日' />

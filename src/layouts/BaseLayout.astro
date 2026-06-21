@@ -2,6 +2,7 @@
 import BaseHead from '../components/BaseHead.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
+import { getLocale, localeMeta, type Locale } from '../i18n';
 
 import '../styles/reset.css';
 import '@unocss/reset/normalize.css';
@@ -10,18 +11,20 @@ import '../styles/webfonts.css'
 interface Props {
 	title?: string;
 	description?: string;
+	locale?: Locale;
+	alternateUrls?: { locale: string; href: string }[];
 }
 
-const { title, description } = Astro.props;
+const { title, description, locale = getLocale(Astro.params.locale), alternateUrls } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="zh-cn">
+<html lang={localeMeta[locale].htmlLang}>
 	<head>
-		<BaseHead title={title} description={description} />
+		<BaseHead title={title} description={description} alternateUrls={alternateUrls} />
 	</head>
 	<body class="flex flex-col font-serif dark:bg-base line-height-normal">
-		<Header />
+		<Header locale={locale} alternateUrls={alternateUrls} />
 		<main class="flex-1 px-4">
 			<slot />
 		</main>

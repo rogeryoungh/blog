@@ -1,0 +1,73 @@
+---
+import Layout from "../../../layouts/BaseLayout.astro";
+import { getCollection } from "astro:content";
+import FormattedDate from "../../../components/FormattedDate.astro";
+import { getLocale, getLocalePath, getLocalizedPostPath, getPostSlug, getPostsByLocale, localeMeta, locales, ui } from "../../../i18n";
+
+import type { CollectionEntry } from "astro:content";
+
+type PostType = CollectionEntry<'post'>;
+
+export function getStaticPaths() {
+	return locales.map((locale) => ({ params: { locale } }));
+}
+
+const locale = getLocale(Astro.params.locale);
+const t = ui[locale];
+const originalPosts = getPostsByLocale(await getCollection('post'), locale);
+const posts = originalPosts.sort(
+	(a: PostType, b: PostType) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+function splitByYear(posts: PostType[]) {
+	const groupedPosts = new Map<number, PostType[]>();
+	posts.forEach((post) => {
+		const year = post.data.pubDate.getFullYear();
+		if (!groupedPosts.has(year)) {
+			groupedPosts.set(year, []);
+		}
+		groupedPosts.get(year)!.push(post);
+	});
+	return groupedPosts;
+}
+
+const splitedPosts = splitByYear(posts);
+---
+
+<Layout
+	title={t.archiveTitle}
+	locale={locale}
+	alternateUrls={locales.map((item) => ({
+		locale: localeMeta[item].htmlLang,
+		href: getLocalePath(item, 'post'),
+	}))}
+>
+	<article class="my-20">
+		<div class="mx-auto max-w-3xl">
+			<div class="text-center my-20">
+				<h1>{t.archiveTitle}</h1>
+			</div>
+			{posts.length === 0 && <p class="text-center text-secondary">{t.noArticles}</p>}
+			{
+				Array.from(splitedPosts).map(([year, posts]) => (
+					<>
+						<h3 class="text-6 my-6">
+							{year.toString()}
+							<sup class="text-secondary text-4">{posts.length}</sup>
+						</h3>
+						<ul class="pl-0">
+							{
+								posts.map((post) => (
+									<li class="flex justify-between px-2 sm:px-8 py-3 transition hover:bg-stone-200">
+										<a href={getLocalizedPostPath(locale, getPostSlug(post))} class="decoration-none text-primary">{post.data.title}</a>
+										<span class="text-secondary text-nowrap"><FormattedDate date={post.data.pubDate} format='MM-DD' /></span>
+									</li>
+								))
+							}
+						</ul>
+					</>
+				))
+			}
+		</div>
+	</article>
+</Layout>

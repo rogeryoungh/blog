@@ -1,0 +1,36 @@
+---
+import { type CollectionEntry, getCollection, render } from 'astro:content';
+import PostLayout from '../../../layouts/PostLayout.astro';
+import { findPostTranslation, getLocalizedPostPath, getPostInfo, localeMeta, locales } from '../../../i18n';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('post');
+	return posts.map((post) => {
+		const { locale, slug } = getPostInfo(post);
+		return {
+			params: { locale, slug },
+			props: post,
+		};
+	});
+}
+type Props = CollectionEntry<'post'>;
+
+const post = Astro.props;
+const allPosts = await getCollection('post');
+const { locale } = getPostInfo(post);
+const alternateUrls = locales
+	.map((item) => findPostTranslation(allPosts, post, item))
+	.filter((item): item is CollectionEntry<'post'> => Boolean(item))
+	.map((item) => {
+		const info = getPostInfo(item);
+		return {
+			locale: localeMeta[info.locale].htmlLang,
+			href: getLocalizedPostPath(info.locale, info.slug),
+		};
+	});
+const { Content } = await render(post);
+---
+
+<PostLayout {...post.data} locale={locale} alternateUrls={alternateUrls}>
+	<Content />
+</PostLayout>

@@ -1,0 +1,29 @@
+---
+import Layout from '../../layouts/MarkdownLayout.astro';
+import { getLocale, getLocalePath, localeMeta, locales, ui } from '../../i18n';
+
+export function getStaticPaths() {
+	return locales.map((locale) => ({ params: { locale } }));
+}
+
+const locale = getLocale(Astro.params.locale);
+const t = ui[locale];
+---
+
+<Layout
+	title={t.home}
+	description={t.homeIntro}
+	locale={locale}
+	alternateUrls={locales.map((item) => ({
+		locale: localeMeta[item].htmlLang,
+		href: getLocalePath(item),
+	}))}
+>
+	<h1>Hi,</h1>
+	<p>{t.homeIntro}</p>
+	<p>🚧 {t.homeNotice}</p>
+	<ul>
+		<li><a href={getLocalePath(locale, 'post')}>{t.myArticles}</a>.</li>
+		<li><a href={getLocalePath(locale, 'about')}>{t.aboutMe}</a>.</li>
+	</ul>
+</Layout>

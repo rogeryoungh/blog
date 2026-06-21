@@ -1,17 +1,20 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
+import type { Locale } from "../i18n";
 
 import "../styles/markdown.css";
 
 interface Props {
 	title?: string;
 	description?: string;
+	locale?: Locale;
+	alternateUrls?: { locale: string; href: string }[];
 }
 
-const { title, description } = Astro.props;
+const { title, description, locale, alternateUrls } = Astro.props;
 ---
 
-<BaseLayout title={title} description={description}>
+<BaseLayout title={title} description={description} locale={locale} alternateUrls={alternateUrls}>
 	<article class="py-20">
 		<div class="article mx-auto">
 			<slot />

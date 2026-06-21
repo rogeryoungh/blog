@@ -210,7 +210,7 @@ inline u64 pre_16_getu(const char *&p) {
 
 测试方法：解析包含 $2^{20}$ 个数字的字符串，禁止循环展开（nounroll）。
 
-![性能表现](../img/parse-int-swar-perf.png)
+![性能表现](../../img/parse-int-swar-perf.png)
 
 我们可以分析出以下结论：
 

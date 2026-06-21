@@ -1,0 +1,48 @@
+---
+import Layout from '../../layouts/PostLayout.astro';
+import { getLocale, getLocalePath, localeMeta, locales, ui } from '../../i18n';
+
+export function getStaticPaths() {
+	return locales.map((locale) => ({ params: { locale } }));
+}
+
+const locale = getLocale(Astro.params.locale);
+const t = ui[locale];
+---
+
+<Layout
+	title={t.aboutMe}
+	description={t.aboutMe}
+	pubDate={new Date('2025-02-20')}
+	locale={locale}
+	alternateUrls={locales.map((item) => ({
+		locale: localeMeta[item].htmlLang,
+		href: getLocalePath(item, 'about'),
+	}))}
+>
+	{locale === 'zh' ? (
+		<>
+			<p>现于 ZJU CST 读研。</p>
+
+			<p>熟练掌握 C++/Java。略懂算法。喜欢数学和编程，很想认识些有同样兴趣的朋友，欢迎交换友链！</p>
+
+			<h2>联系方式</h2>
+
+			<p>常用 ID : <code>rogeryoungh</code>。你可以在 <a href="https://github.com/rogeryoungh">GitHub</a>、<a href="https://t.me/rogeryoungh">Telegram</a>上找到我。</p>
+
+			<p>邮件：<a href="mailto:rogeryoungh@foxmail.com"><code>rogeryoungh at foxmail dot com</code></a></p>
+		</>
+	) : (
+		<>
+			<p>I am a graduate student in ZJU CST.</p>
+
+			<p>I mostly write C++ and Java. I like mathematics and programming, and I would be happy to meet more friends with similar interests. Blogroll exchanges are welcome!</p>
+
+			<h2>Contact</h2>
+
+			<p>My usual ID is <code>rogeryoungh</code>. You can find me on <a href="https://github.com/rogeryoungh">GitHub</a> and <a href="https://t.me/rogeryoungh">Telegram</a>.</p>
+
+			<p>Email: <a href="mailto:rogeryoungh@foxmail.com"><code>rogeryoungh at foxmail dot com</code></a></p>
+		</>
+	)}
+</Layout>

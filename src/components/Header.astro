@@ -1,6 +1,17 @@
 ---
 import HeaderLink from './HeaderLink.astro';
 import { SITE_TITLE } from '../consts';
+import { getLocale, getLocalePath, localeMeta, locales, ui, type Locale } from '../i18n';
+
+interface Props {
+	locale?: Locale;
+	alternateUrls?: { locale: string; href: string }[];
+}
+
+const locale = getLocale(Astro.props.locale ?? Astro.params.locale);
+const t = ui[locale];
+const otherLocale = locales.find((item) => item !== locale)!;
+const switchUrl = Astro.props.alternateUrls?.find((item) => item.locale === localeMeta[otherLocale].htmlLang)?.href;
 ---
 
 <header class="shadow print:hidden">
@@ -12,7 +23,7 @@ import { SITE_TITLE } from '../consts';
 					alt="Roger's avatar"
 					class="w-12 h-12 rounded-full border-solid border-2 border-stone-300 transition transition-duration-500 hover:transform-rotate-720"
 				/>
-				<a class="decoration-none color-base color-initial font-bold" href="/">{SITE_TITLE}</a>
+				<a class="decoration-none color-base color-initial font-bold" href={getLocalePath(locale)}>{SITE_TITLE}</a>
 			</div>
 			<div class="sm:hidden">
 				<button class="p-4 text-6 justify-center hover:bg-stone-200 inline-flex items-center ">
@@ -21,9 +32,10 @@ import { SITE_TITLE } from '../consts';
 			</div>
 			<nav class="hidden sm:block">
 				<ul>
-					<HeaderLink href="/">Home</HeaderLink>
-					<HeaderLink href="/post">Articles</HeaderLink>
-					<HeaderLink href="/about">About</HeaderLink>
+					<HeaderLink href={getLocalePath(locale)}>{t.home}</HeaderLink>
+					<HeaderLink href={getLocalePath(locale, 'post')}>{t.articles}</HeaderLink>
+					<HeaderLink href={getLocalePath(locale, 'about')}>{t.about}</HeaderLink>
+					{switchUrl && <HeaderLink href={switchUrl}>{localeMeta[otherLocale].label}</HeaderLink>}
 				</ul>
 			</nav>
 		</div>
