@@ -25,11 +25,6 @@ const switchUrl = Astro.props.alternateUrls?.find((item) => item.locale === loca
 				/>
 				<a class="decoration-none color-base color-initial font-bold" href={getLocalePath(locale)}>{SITE_TITLE}</a>
 			</div>
-			<div class="sm:hidden">
-				<button class="p-4 text-6 justify-center hover:bg-stone-200 inline-flex items-center" aria-label="Menu">
-				  <span class="i-ph-list"></span>
-				</button>
-			</div>
 			<nav class="hidden sm:block">
 				<ul>
 					<HeaderLink href={getLocalePath(locale)}>{t.home}</HeaderLink>
@@ -38,6 +33,25 @@ const switchUrl = Astro.props.alternateUrls?.find((item) => item.locale === loca
 					{switchUrl && <HeaderLink href={switchUrl}>{localeMeta[otherLocale].label}</HeaderLink>}
 				</ul>
 			</nav>
+			<details class="relative sm:hidden">
+				<summary class="p-4 text-6 justify-center hover:bg-stone-200 inline-flex items-center cursor-pointer list-none" aria-label="Menu">
+					<span class="i-ph-list"></span>
+				</summary>
+				<nav class="absolute right-0 top-full z-10 min-w-36 bg-white shadow">
+					<ul class="flex flex-col">
+						<HeaderLink href={getLocalePath(locale)}>{t.home}</HeaderLink>
+						<HeaderLink href={getLocalePath(locale, 'post')}>{t.articles}</HeaderLink>
+						<HeaderLink href={getLocalePath(locale, 'about')}>{t.about}</HeaderLink>
+						{switchUrl && <HeaderLink href={switchUrl}>{localeMeta[otherLocale].label}</HeaderLink>}
+					</ul>
+				</nav>
+			</details>
 		</div>
 	</nav>
 </header>
+
+<style>
+	summary::-webkit-details-marker {
+		display: none;
+	}
+</style>
