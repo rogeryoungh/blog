@@ -1,6 +1,4 @@
 .article {
-  --at-apply: max-w-3xl;
-
   p {
     --at-apply: text-justify my-6 text-4;
   }

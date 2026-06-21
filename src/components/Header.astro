@@ -26,8 +26,8 @@ const switchUrl = Astro.props.alternateUrls?.find((item) => item.locale === loca
 				<a class="decoration-none color-base color-initial font-bold" href={getLocalePath(locale)}>{SITE_TITLE}</a>
 			</div>
 			<div class="sm:hidden">
-				<button class="p-4 text-6 justify-center hover:bg-stone-200 inline-flex items-center ">
-				  <span class="i-ph-list">xx</span>
+				<button class="p-4 text-6 justify-center hover:bg-stone-200 inline-flex items-center" aria-label="Menu">
+				  <span class="i-ph-list"></span>
 				</button>
 			</div>
 			<nav class="hidden sm:block">
