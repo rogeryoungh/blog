@@ -1,168 +1,166 @@
-.article {
-  p {
-    --at-apply: text-justify my-6 text-4;
-  }
+.article p {
+  margin: 1.5rem 0;
+  text-align: justify;
+  font-size: 1rem;
+}
 
-  /* Make links red */
-  a,
-  a:visited {
-    --at-apply: decoration-none break-anywhere text-link;
-  }
+.article a,
+.article a:visited {
+  overflow-wrap: anywhere;
+  color: #a80000;
+  text-decoration: none;
+}
 
-  a:hover {
-    --at-apply: underline;
-  }
+.article a:hover {
+  text-decoration-line: underline;
+}
 
-  h1,
-  h2,
-  h3,
-  h4 {
-    --at-apply: font-bold;
-  }
+.article h1,
+.article h2,
+.article h3,
+.article h4 {
+  font-weight: 700;
+}
 
-  /* Heading typography */
-  h1 {
-    --at-apply: text-8 my-8;
-  }
+.article h1 {
+  margin: 2rem 0;
+  font-size: 2rem;
+}
 
-  h2 {
-    --at-apply: text-7 my-7;
-  }
+.article h2 {
+  margin: 1.75rem 0;
+  font-size: 1.75rem;
+}
 
-  h3 {
-    --at-apply: text-6 my-6;
-  }
+.article h3 {
+  margin: 1.5rem 0;
+  font-size: 1.5rem;
+}
 
-  h4 {
-    --at-apply: text-5 my-6;
-  }
+.article h4 {
+  margin: 1.5rem 0;
+  font-size: 1.25rem;
+}
 
-  h5 {
-    --at-apply: text-4 my-6;
-  }
+.article h5 {
+  margin: 1.5rem 0;
+  font-size: 1rem;
+}
 
-  .katex-display {
-    --at-apply: overflow-x-auto overflow-y-hidden;
-  }
+.article .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
 
-  /* Make images easier to work with */
-  img {
-    --at-apply: max-w-full h-auto block;
-  }
+.article img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
 
-  ol,
-  ul {
-    --at-apply: pl-8 list-disc;
-  }
+.article ol,
+.article ul {
+  padding-left: 2rem;
+  list-style-type: disc;
+}
 
-  /* Inherit fonts for inputs and buttons */
-  input,
-  button,
-  textarea,
-  select {
-    --at-apply: font-inherit;
-  }
+.article input,
+.article button,
+.article textarea,
+.article select {
+  font-family: inherit;
+}
 
-  /* Prevent textarea from overflowing */
-  textarea {
-    --at-apply: w-full;
-  }
+.article textarea {
+  width: 100%;
+}
 
-  /* Styles for inline code or code snippets */
-  code,
-  pre,
-  kbd {
-    --at-apply: font-mono;
-  }
+.article code,
+.article pre,
+.article kbd {
+  font-family: Maple Mono, Jetbrains Mono;
+}
 
-  /* Better tables */
-  table {
-    --at-apply: w-auto mx-auto;
-    --at-apply: border-collapse;
-    --at-apply: overflow-x-scroll;
-    counter-increment: caption;
-  }
+.article table {
+  width: auto;
+  margin: 0 auto;
+  border-collapse: collapse;
+  overflow-x: scroll;
+  counter-increment: caption;
+}
 
-  img {
-    --at-apply: w-full h-auto;
-  }
+.article table>thead {
+  border-color: #000;
+  border-style: solid;
+  border-width: 2.27px 0 1.8px;
+}
 
-  /* add bottom border on column table headings  */
-  /* table tr>th[scope='col'] {
-    --at-apply: border-b-1.36 border-base border-solid;
-  } */
+.article table>tbody {
+  border-color: #000;
+  border-style: none none solid;
+  border-bottom-width: 2.27px;
+}
 
-  table>thead {
-    --at-apply: border-solid border-[#000] border-x-none border-t-2.27 border-b-1.8;
-  }
+.article th,
+.article td {
+  padding: 0.25rem 1rem;
+}
 
-  table>tbody {
-    --at-apply: border-solid border-[#000] border-x-none border-t-none border-b-2.27;
-  }
+.article caption {
+  text-align: left;
+  font-size: 0.923em;
+  padding: 0 0.25em 0.25em;
+  width: 100%;
+  margin-left: 0;
+}
 
-  th,
-  td {
-    --at-apply: px-4 py-1;
-  }
+.article caption::before {
+  content: 'Table ' counter(caption) '. ';
+  font-weight: bold;
+}
 
-  /* Table caption */
-  caption {
-    text-align: left;
-    font-size: 0.923em;
-    /* border-bottom: 2pt solid #000; */
-    padding: 0 0.25em 0.25em;
-    width: 100%;
-    margin-left: 0;
-  }
+.article blockquote {
+  margin: 1.5rem 0;
+  padding: 0.25rem 1.25rem;
+  background-color: #eee;
+  border-inline-start: 5px solid #000;
+}
 
-  caption::before {
-    content: 'Table ' counter(caption) '. ';
-    font-weight: bold;
-  }
+.article .scroll-wrapper {
+  overflow-x: auto;
+}
 
-  blockquote {
-    --at-apply: mx-0 my-6 py-1 px-5;
-    background-color: #eee;
-    border-inline-start: 5px solid #000;
-  }
+.article .scroll-wrapper>table td {
+  white-space: nowrap;
+}
 
-  /* allow scroll on the x-axis */
-  .scroll-wrapper {
-    overflow-x: auto;
-  }
+.article nav ol {
+  counter-reset: item;
+}
 
-  /* if a table is wrapped in a scroll wrapper,
-	the table cells shouldn't wrap */
-  .scroll-wrapper>table td {
-    white-space: nowrap;
-  }
+.article nav li {
+  display: block;
+}
 
-  /* Nested ordered list for ToC */
-  nav ol {
-    counter-reset: item;
-  }
+.article nav li::before {
+  content: counters(item, '.') ' ';
+  counter-increment: item;
+  padding-right: 0.85rem;
+  font-weight: inherit;
+  color: var(--link-visited);
+}
 
-  nav li {
-    display: block;
-  }
+.article dl dd {
+  text-align: center;
+}
 
-  nav li:before {
-    content: counters(item, '.') ' ';
-    counter-increment: item;
-    padding-right: 0.85rem;
-    font-weight: inherit;
-    color: var(--link-visited);
-  }
+.article pre {
+  margin: 1rem 0;
+  border: 2px solid #000;
+  padding: 1rem;
+}
 
-  /* Center definitions (most useful for display equations) */
-  dl dd {
-    text-align: center;
-  }
-
-  pre {
-    --at-apply: border-solid border-2 border-[#000] p-4 my-4;
-  }
-  code {
-    --at-apply: text-size-3.5;
-  }
+.article code {
+  font-size: 0.875rem;
 }
