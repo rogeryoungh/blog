@@ -4,6 +4,8 @@ pubDate: "2026-06-22"
 description: "From order 2 to order 4"
 ---
 
+> Translated by ChatGPT.
+
 Draft...
 
 After translating David Harvey's two papers, namely [Block optimizations for Newton iteration on power series](/en/post/2022/poly-newton/), I have always been curious about the implementation of inv 9E. It is a third-order Newton iteration, so its complexity is a noticeable step below other second-order iterations, and it also remains useful in the block-method setting.
