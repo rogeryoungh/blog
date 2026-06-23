@@ -59,10 +59,14 @@
   height: auto;
 }
 
-.article ol,
 .article ul {
   padding-left: 2rem;
   list-style-type: disc;
+}
+
+.article ol {
+  padding-left: 2rem;
+  list-style-type: decimal;
 }
 
 .article input,
@@ -136,6 +140,8 @@
 }
 
 .article nav ol {
+  padding-left: 0;
+  list-style: none;
   counter-reset: item;
 }
 
