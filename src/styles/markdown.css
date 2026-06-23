@@ -90,7 +90,6 @@
   width: auto;
   margin: 0 auto;
   border-collapse: collapse;
-  overflow-x: scroll;
   counter-increment: caption;
 }
 
@@ -132,9 +131,12 @@
 }
 
 .article .scroll-wrapper {
+  max-width: 100%;
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
+.article .scroll-wrapper>table th,
 .article .scroll-wrapper>table td {
   white-space: nowrap;
 }

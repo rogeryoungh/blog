@@ -41,6 +41,38 @@ const postRedirects = Object.fromEntries(
 	postLocales.flatMap(getPostRedirectEntries),
 );
 
+function rehypeScrollTables() {
+	/**
+	 * @param {any} node
+	 */
+	function wrapTables(node) {
+		if (!Array.isArray(node.children)) {
+			return;
+		}
+
+		const isScrollWrapper = node.type === 'element'
+			&& node.tagName === 'div'
+			&& Array.isArray(node.properties?.className)
+			&& node.properties.className.includes('scroll-wrapper');
+
+		node.children = node.children.map(/** @param {any} child */ (child) => {
+			if (!isScrollWrapper && child.type === 'element' && child.tagName === 'table') {
+				return {
+					type: 'element',
+					tagName: 'div',
+					properties: { className: ['scroll-wrapper'] },
+					children: [child],
+				};
+			}
+
+			wrapTables(child);
+			return child;
+		});
+	}
+
+	return wrapTables;
+}
+
 const redirects = {
 	'/about': '/zh/about',
 	'/post': '/zh/post',
@@ -70,7 +102,7 @@ export default defineConfig({
 	integrations: [mdx(), sitemap(), unocss()],
 	markdown: {
 		processor: unified({
-			rehypePlugins: [rehypeKatex],
+			rehypePlugins: [rehypeKatex, rehypeScrollTables],
 			remarkPlugins: [remarkMath],
 		}),
 		shikiConfig: {
